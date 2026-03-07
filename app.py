@@ -113,10 +113,11 @@ st.info(
 
 with st.expander("Developer Debug Info"):
     st.write("Secret:", st.session_state.secret)
-    st.write("Attempts:", st.session_state.attempts)
+    st.write("Attempts used:", st.session_state.attempts)
+    st.write("Attempts remaining:", attempt_limit - st.session_state.attempts)
     st.write("Score:", st.session_state.score)
     st.write("Difficulty:", difficulty)
-    st.write("History:", st.session_state.history)
+    st.write("Guess History:", st.session_state.history)
 
 raw_guess = st.text_input(
     "Enter your guess:",
