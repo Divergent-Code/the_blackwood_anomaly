@@ -12,18 +12,14 @@ def get_range_for_difficulty(difficulty: str):
 
 
 def parse_guess(raw: str):
-    if raw is None:
-        return False, None, "Enter a guess."
-
-    if raw == "":
+    if not raw:
         return False, None, "Enter a guess."
 
     try:
         if "." in raw:
-            value = int(float(raw))
-        else:
-            value = int(raw)
-    except Exception:
+            return False, None, "Please enter a whole number, not a decimal."
+        value = int(raw)
+    except ValueError:
         return False, None, "That is not a number."
 
     return True, value, None
