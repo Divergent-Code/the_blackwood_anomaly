@@ -165,7 +165,7 @@ if submit:
                     f"Score: {st.session_state.score}"
                 )
 
-if show_hint and st.session_state.hint:
+if show_hint and st.session_state.hint and st.session_state.status != "won":
     st.warning(st.session_state.hint)
 
 st.divider()
