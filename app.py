@@ -47,40 +47,17 @@ st.sidebar.caption(f"Attempts allowed: {attempt_limit}")
 # with a widget (like clicking a button or pressing enter in a text box).
 # `st.session_state` allows variables to persist across these constant reruns.
 
-# Reset the entire game state immediately if the user selects a new difficulty
+# Initialize or reset the entire game state when the app first loads
+# or when the user changes the difficulty level.
 if st.session_state.get("difficulty") != difficulty:
     st.session_state.difficulty = difficulty
     st.session_state.secret = random.randint(low, high)
     st.session_state.attempts = 0
     st.session_state.score = 0
     st.session_state.status = "playing"
-    st.session_state.history = []
-    st.session_state.hint = None
-
-
-# Initialize default state variables on the very first page load
-if "secret" not in st.session_state:
-    st.session_state.secret = random.randint(low, high)
-
-if "attempts" not in st.session_state:
-    st.session_state.attempts = 0
-
-if "score" not in st.session_state:
-    st.session_state.score = 0
-
-# Status options: "playing", "won", "lost"
-if "status" not in st.session_state:
-    st.session_state.status = "playing"
-
-if "new_game_started" not in st.session_state:
     st.session_state.new_game_started = False
-
-if "history" not in st.session_state:
     st.session_state.history = []
-
-if "hint" not in st.session_state:
     st.session_state.hint = None
-
 # ---------------------------------------------------------
 # Main UI Layout
 # ---------------------------------------------------------
