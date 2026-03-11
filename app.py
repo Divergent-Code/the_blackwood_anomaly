@@ -72,6 +72,9 @@ if "score" not in st.session_state:
 if "status" not in st.session_state:
     st.session_state.status = "playing"
 
+if "new_game_started" not in st.session_state:
+    st.session_state.new_game_started = False
+
 if "history" not in st.session_state:
     st.session_state.history = []
 
@@ -82,6 +85,12 @@ if "hint" not in st.session_state:
 # Main UI Layout
 # ---------------------------------------------------------
 st.subheader("Make a guess")
+
+# Display the "New game started." message if it was flagged before a rerun
+if st.session_state.new_game_started:
+    st.success("New game started.")
+    # Reset the flag so it only shows once
+    st.session_state.new_game_started = False
 
 st.info(
     f"Guess a number between {low} and {high}. "
@@ -121,7 +130,9 @@ if new_game:
     st.session_state.status = "playing"
     st.session_state.score = 0
     st.session_state.history = []
-    st.success("New game started.")
+    
+    # Flag that a new game just started so the success message survives the rerun
+    st.session_state.new_game_started = True
     st.rerun()
 
 if st.session_state.status != "playing":
