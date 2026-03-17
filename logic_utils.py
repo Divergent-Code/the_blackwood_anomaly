@@ -1,11 +1,3 @@
-"""
-logic_utils.py
-
-This module contains the core business logic for the Game Glitch Investigator application.
-By separating these functions from the Streamlit UI (app.py), the code is easier to unit test,
-maintain, and debug without needing to spin up the web server.
-"""
-
 def get_range_for_difficulty(difficulty: str) -> tuple[int, int]:
     """Retrieve the inclusive minimum and maximum range for a given difficulty.
 
@@ -78,6 +70,38 @@ def check_guess(guess: int, secret: int) -> tuple[str, str]:
     elif guess > secret:
         return "Too High", "📉 Go LOWER!"
     return "Too Low", "📈 Go HIGHER!"
+
+
+def calculate_temperature(guess: int, secret: int, limit: int) -> tuple[str, str, str]:
+    """Calculate the proximity of a guess to the secret number.
+
+    Returns an emoji, string modifier, and color to display based on the absolute
+    distance between the guess and the secret. The thresholds scale with the 
+    maximum range limit to provide consistent feel across difficulty levels.
+
+    Args:
+        guess (int): The integer value guessed by the player.
+        secret (int): The actual secret number.
+        limit (int): The maximum possible number (e.g., 20, 100, 200).
+
+    Returns:
+        tuple[str, str, str]: A 3-tuple containing:
+            - emoji (str): A relevant icon (e.g., "🔥", "🧊")
+            - label (str): The textual temperature label (e.g., "Boiling", "Freezing")
+            - color (str): The Streamlit alert color ("error", "warning", "info")
+    """
+    distance = abs(guess - secret)
+    # Define thresholds as percentages of the total limit
+    if distance <= max(1, limit * 0.05):
+        return "🔥", "Boiling!", "error"  # Red
+    elif distance <= max(3, limit * 0.15):
+        return "☀️", "Hot!", "warning" # Yellow
+    elif distance <= max(8, limit * 0.30):
+        return "❄️", "Cold", "info"    # Blue
+    else:
+        return "🧊", "Freezing", "info" # Blue
+
+
 
 
 def update_score(

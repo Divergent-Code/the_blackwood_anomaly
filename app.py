@@ -7,7 +7,10 @@ and wires up the visual inputs/outputs to the core business logic from `logic_ut
 """
 import random
 import streamlit as st
-from logic_utils import get_range_for_difficulty, parse_guess, check_guess, update_score, load_high_scores, save_high_score
+from logic_utils import (
+    get_range_for_difficulty, parse_guess, check_guess, 
+    update_score, load_high_scores, save_high_score, calculate_temperature
+)
 
 # File path for persisting high scores between sessions (Agent-assisted feature)
 HIGH_SCORES_FILE = "high_scores.json"
@@ -42,6 +45,12 @@ low, high = get_range_for_difficulty(difficulty)
 
 st.sidebar.caption(f"Range: {low} to {high}")
 st.sidebar.caption(f"Attempts allowed: {attempt_limit}")
+
+# Toggle for Hint Systems
+st.sidebar.divider()
+st.sidebar.subheader("💡 Hint Systems")
+show_higher_lower = st.sidebar.checkbox("📈 Show Higher/Lower", value=True, help="Standard text telling you if the secret is higher or lower than your guess.")
+show_hot_cold = st.sidebar.checkbox("🌡️ Show Hot/Cold", value=False, help="Color-coded temperature hints based on proximity to the secret.")
 
 # ---------------------------------------------------------
 # Sidebar: High Score Leaderboard (Agent-assisted feature)
@@ -112,14 +121,11 @@ with st.form(key=f"guess_form_{difficulty}", clear_on_submit=True):
     )
 
     # Render buttons in a horizontal row to save space
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2)
     with col1:
         submit = st.form_submit_button("Submit Guess 🚀")
     with col2:
         new_game = st.form_submit_button("New Game 🔁")
-    with col3:
-        # A standalone toggle for the visual hint (the higher/lower arrow)
-        show_hint = st.checkbox("Show hint", value=True)
 
 # ---------------------------------------------------------
 # New Game Logic
@@ -154,17 +160,37 @@ if submit:
         # Halt processing sequence: Show error but don't cost the user an attempt
         st.error(err)
     else:
-        # Step 2: Input valid. Deduct an attempt and record the guess.
-        st.session_state.attempts += 1
-        st.session_state.history.append(guess_int)
-
+        # Retrieve secret before using it
         secret = st.session_state.secret
-
-        # Step 3: Check for win / higher / lower
         outcome, message = check_guess(guess_int, secret)
 
-        # Store the feedback for the standalone hint UI
-        st.session_state.hint = message
+        # Calculate temperatures
+        temp_emoji, temp_label, temp_color = calculate_temperature(guess_int, secret, high - low)
+
+        # Build the hint display based on user preferences
+        hint_parts = []
+        if show_hot_cold:
+            hint_parts.append(f"{temp_emoji} **{temp_label}**")
+        if show_higher_lower:
+            hint_parts.append(message)
+            
+        if hint_parts:
+            hint_display = " — ".join(hint_parts)
+        else:
+            hint_display = None  # User disabled all hints
+
+        # Step 2: Input valid. Deduct an attempt and record the guess.
+        st.session_state.attempts += 1
+        st.session_state.history.append({
+            "Attempt": st.session_state.attempts,
+            "Guess": guess_int,
+            "Hint": message if show_higher_lower else "Hidden",
+            "Temperature": f"{temp_emoji} {temp_label}" if show_hot_cold else "Hidden"
+        })
+
+        # Store the formatted feedback for the standalone hint UI
+        st.session_state.hint = hint_display
+        st.session_state.hint_color = temp_color if show_hot_cold else "warning"
 
         st.session_state.score = update_score(
             current_score=st.session_state.score,
@@ -193,8 +219,26 @@ if submit:
                     f"Score: {st.session_state.score}"
                 )
 
-if show_hint and st.session_state.hint and st.session_state.status != "won":
-    st.warning(st.session_state.hint)
+if st.session_state.hint and st.session_state.status != "won":
+    # Render different alert box colors based on the temperature if enabled
+    hint_color = st.session_state.get("hint_color", "warning")
+    if hint_color == "error":
+        st.error(st.session_state.hint)
+    elif hint_color == "info":
+        st.info(st.session_state.hint)
+    else:
+        st.warning(st.session_state.hint)
+
+# Show the structured Game Summary table when the game ends
+if st.session_state.status != "playing" and len(st.session_state.history) > 0:
+    st.divider()
+    st.subheader("📊 Game Summary")
+    # Tell Streamlit to draw a sleek, interactive dataframe
+    st.dataframe(
+        st.session_state.history,
+        use_container_width=True,
+        hide_index=True
+    )
 
 st.divider()
 st.caption("Built by an AI that claims this code is production-ready.")

@@ -34,9 +34,18 @@ It wrote the code, ran away, and now the game is unplayable.
 - [ ] [Insert a screenshot of your fixed, winning game here]
 - [ ] [Insert a screenshot of the pytest command and passing tests here]
 
-## 🚀 Stretch Features
+## 🚀 Challenge 4: Stretch Features (Agent Mode Feature)
 
-- [ ] [If you choose to complete Challenge 4, insert a screenshot of your Enhanced Game UI here]
+A **Game Session Summary Table** and an **Interactive Hot/Cold Tracker** were added to give the player a more visual, user-friendly experience.
+
+### What it does
+- Choose to enable **🌡️ Hot/Cold Hints** in the sidebar. When enabled, your hints are replaced with temperatures (e.g., 🔥 Boiling, ❄️ Freezing) based on how close you are to the secret number.
+- The color of the hint message dynamically changes based on your temperature!
+- When the game ends, a **📊 Game Summary Table** is displayed showing a timeline of all your guesses, temps, and hints.
+
+### 📸 Demo
+
+- [ ] [Insert a screenshot of your shiny new 📊 Game Summary Table and 🌡️ Hot/Cold hints here!]
 
 ---
 
