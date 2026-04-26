@@ -1,6 +1,15 @@
 import pytest
 import re
 import math
+import os
+import sys
+
+# Add the parent directory to the path so we can import main
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+# Set a dummy API key for testing so main.py doesn't exit on import
+os.environ.setdefault("GOOGLE_API_KEY", "dummy_test_key")
+
 from main import cosine_similarity, build_system_instruction
 
 def test_cosine_similarity():
