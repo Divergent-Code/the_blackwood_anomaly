@@ -1,0 +1,27 @@
+graph TD
+    %% User Interaction
+    User([Player]) -->|Types Action: e.g., 'Hide under bed'| CLI[Terminal / CLI Interface]
+
+    %% Main Python Engine
+    subgraph Python Game Engine: main.py
+        CLI -->|Passes Input| GameLoop[Core Game Loop & State Tracker]
+        
+        %% RAG System
+        GameLoop -->|Requests Context| RAG[RAG Retrieval Module]
+        RAG -->|Reads Lore| Doc1[(data/world_lore.md)]
+        RAG -->|Reads Mechanics| Doc2[(data/combat_mechanics.md)]
+        RAG -->|Returns Rule Context| GameLoop
+        
+        %% Guardrails
+        GameLoop -->|Combines Input + RAG Rules| Guardrail[Input Guardrail / Validation]
+    end
+
+    %% AI Model Integration
+    subgraph Generative AI Model
+        Guardrail -->|Verified Prompt| LLM((AI Dungeon Master))
+        LLM -->|Generates Story & Consequences| Evaluator[Output Evaluator / Safety Check]
+    end
+
+    %% Return Loop
+    Evaluator -->|Returns Safe Response| GameLoop
+    GameLoop -->|Updates HP/Stress & Renders Text| CLI
