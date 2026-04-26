@@ -24,7 +24,7 @@ Reliability Testing: Automated pytest scripts to verify input validation and rul
 
 [x] Phase 2: System Architecture (Mermaid.js diagram generated)
 
-[ ] Phase 3: Core Logic (main.py game loop and RAG integration)
+[x] Phase 3: Core Logic (main.py game loop and RAG integration)
 
 [ ] Phase 4: Reliability & Testing (test_game.py automated harness)
 

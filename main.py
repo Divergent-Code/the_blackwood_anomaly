@@ -1,5 +1,6 @@
 import os
 import re
+import math
 from dotenv import load_dotenv
 import google.generativeai as genai
 
@@ -14,29 +15,82 @@ if not api_key:
 
 genai.configure(api_key=api_key)
 
-def load_rag_context():
-    """Reads the world lore and combat mechanics markdown files."""
-    try:
-        with open("data/world_lore.md", "r") as lore_file:
-            lore = lore_file.read()
-        with open("data/combat_mechanics.md", "r") as mechanics_file:
-            mechanics = mechanics_file.read()
-        return lore, mechanics
-    except FileNotFoundError as e:
-        print(f"🚨 ERROR: RAG document missing. Ensure your /data folder has the correct files. Details: {e}")
-        exit(1)
+def cosine_similarity(v1, v2):
+    dot_product = sum(a * b for a, b in zip(v1, v2))
+    magnitude_v1 = math.sqrt(sum(a * a for a in v1))
+    magnitude_v2 = math.sqrt(sum(b * b for b in v2))
+    if magnitude_v1 == 0 or magnitude_v2 == 0:
+        return 0.0
+    return dot_product / (magnitude_v1 * magnitude_v2)
 
-def build_system_instruction(lore, mechanics):
-    """Combines the RAG documents into a strict system prompt for the AI."""
-    return f"""
+class RAGEngine:
+    def __init__(self):
+        self.chunks = [] # List of dicts: {"title": str, "content": str, "embedding": list}
+        self.model_name = "models/text-embedding-004"
+        self._load_and_chunk()
+        
+    def _parse_markdown(self, filename, prefix):
+        chunks = []
+        try:
+            with open(filename, "r", encoding="utf-8") as f:
+                content = f.read()
+        except FileNotFoundError as e:
+            print(f"🚨 ERROR: RAG document missing. {e}")
+            exit(1)
+            
+        # Split by markdown headers
+        sections = re.split(r'\n## ', content)
+        for i, section in enumerate(sections):
+            if not section.strip(): continue
+            lines = section.split('\n')
+            title = lines[0].strip()
+            # Ensure the title has a clean format
+            if i == 0 and not section.startswith('##'):
+                title = "Overview"
+            title = f"[{prefix}] {title.replace('#', '').strip()}"
+            body = '\n'.join(lines[1:]).strip()
+            if body:
+                chunks.append({"title": title, "content": f"{title}\n{body}"})
+        return chunks
+
+    def _load_and_chunk(self):
+        print("📚 Loading and indexing RAG knowledge base...")
+        raw_chunks = []
+        raw_chunks.extend(self._parse_markdown("world_lore.md", "LORE"))
+        raw_chunks.extend(self._parse_markdown("combat_mechanics.md", "MECHANICS"))
+        
+        # Cache embeddings
+        for chunk in raw_chunks:
+            embedding = genai.embed_content(
+                model=self.model_name,
+                content=chunk["content"],
+                task_type="retrieval_document"
+            )["embedding"]
+            chunk["embedding"] = embedding
+            self.chunks.append(chunk)
+            
+    def retrieve(self, query, top_k=2):
+        query_embedding = genai.embed_content(
+            model=self.model_name,
+            content=query,
+            task_type="retrieval_query"
+        )["embedding"]
+        
+        # Calculate similarity
+        scored_chunks = []
+        for chunk in self.chunks:
+            score = cosine_similarity(query_embedding, chunk["embedding"])
+            scored_chunks.append((score, chunk))
+            
+        # Sort and return
+        scored_chunks.sort(key=lambda x: x[0], reverse=True)
+        return [c for score, c in scored_chunks[:top_k]]
+
+def build_system_instruction():
+    """Provides the base static system prompt for the AI."""
+    return """
     You are the AI Game Master for a survival horror text adventure called 'The Blackwood Anomaly'.
-    You must strictly adhere to the following world lore and mechanics. Do not break character.
-    
-    === WORLD LORE ===
-    {lore}
-    
-    === COMBAT & SURVIVAL MECHANICS ===
-    {mechanics}
+    Do not break character. Keep the atmosphere tense and terrifying.
     
     === YOUR OUTPUT FORMAT ===
     Respond with atmospheric, terrifying prose describing the outcome of the player's action.
@@ -47,11 +101,11 @@ def build_system_instruction(lore, mechanics):
 def main():
     print("🌲 Booting The Blackwood Anomaly Engine...")
     
-    # 1. Load RAG Context
-    lore, mechanics = load_rag_context()
-    system_instruction = build_system_instruction(lore, mechanics)
+    # 1. Initialize RAG Engine
+    rag_engine = RAGEngine()
     
     # 2. Initialize the AI Model
+    system_instruction = build_system_instruction()
     # Using the fast model as requested, perfect for text-based real-time responses
     model = genai.GenerativeModel(
         model_name="gemini-1.5-flash",
@@ -87,8 +141,28 @@ def main():
             print("You stand paralyzed by fear. (Please enter an action).")
             continue
             
-        # Send the action to the AI, appending the current state so it knows the math
-        action_with_state = f"Player Action: {player_action}\n(Current State - Health: {health}%, Stress: {stress}%)"
+        # 5. RAG Retrieval Step
+        # Formulate a state-aware query
+        retrieval_query = f"Player State: {health}% Health, {stress}% Stress. Action: {player_action}"
+        retrieved_chunks = rag_engine.retrieve(retrieval_query, top_k=2)
+        
+        print("\n[RAG Engine] Retrieved Context:")
+        context_texts = []
+        for chunk in retrieved_chunks:
+            print(f"  -> {chunk['title']}")
+            context_texts.append(chunk['content'])
+            
+        rag_context_str = "\n\n".join(context_texts)
+        
+        # 6. Send the action with retrieved context and state
+        action_with_state = f"""
+=== RETRIEVED GAME MECHANICS ===
+{rag_context_str}
+
+=== PLAYER ACTION ===
+(Current State - Health: {health}%, Stress: {stress}%)
+Player: {player_action}
+"""
         
         try:
             response = chat.send_message(action_with_state)
