@@ -2,7 +2,8 @@ from fastapi import FastAPI, Depends, HTTPException, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from google import genai # Using the modern GenAI client for isolated requests
-
+from sqlalchemy.orm import Session
+from database import get_db, GameSession
 app = FastAPI(title="The Blackwood Anomaly API")
 
 # Security schema to extract the Bearer token (The User's API Key)
@@ -35,7 +36,10 @@ class GameResponse(BaseModel):
 
 # --- API Endpoints ---
 @app.post("/api/v1/sessions", response_model=GameResponse)
-async def create_session(client: genai.Client = Depends(get_gemini_client)):
+async def create_session(
+    client: genai.Client = Depends(get_gemini_client),
+    db: Session = Depends(get_db)
+):
     """Initializes a new game using the player's provided API key."""
     
     system_prompt = "You are a horror Game Master. The game has just started..."
@@ -48,24 +52,42 @@ async def create_session(client: genai.Client = Depends(get_gemini_client)):
             config={"system_instruction": system_prompt}
         )
         
-        # TODO: Save new session to PostgreSQL here
-        
-        return GameResponse(
-            session_id="new-uuid-1234",
+        # Save new session to database
+        new_session = GameSession(
             health=100,
             stress=0,
+            history=[{"role": "model", "content": response.text}]
+        )
+        db.add(new_session)
+        db.commit()
+        db.refresh(new_session)
+        
+        return GameResponse(
+            session_id=new_session.id,
+            health=new_session.health,
+            stress=new_session.stress,
             narrative=response.text
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI Engine Error: {str(e)}")
 
 @app.post("/api/v1/sessions/{session_id}/actions", response_model=GameResponse)
-async def submit_action(session_id: str, request: ActionRequest, client: genai.Client = Depends(get_gemini_client)):
+async def submit_action(
+    session_id: str, 
+    request: ActionRequest, 
+    client: genai.Client = Depends(get_gemini_client),
+    db: Session = Depends(get_db)
+):
     """Processes a player's action using their API key and updates the database."""
     
-    # TODO: 1. Fetch current health/stress from PostgreSQL using session_id
+    # 1. Fetch current health/stress from database using session_id
+    session = db.query(GameSession).filter(GameSession.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+        
     # TODO: 2. Run RAG Retrieval
-    # TODO: 3. Call AI with the client.models.generate_content()
+    # TODO: 3. Call AI with the client.models.generate_content() using session.history
+
     # TODO: 4. Extract new stats via Regex
     # TODO: 5. Update PostgreSQL
     

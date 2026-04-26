@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  db:
+    # We use the ankane/pgvector image to get PostgreSQL + the pgvector extension pre-installed
+    image: ankane/pgvector:latest
+    container_name: blackwood_db
+    environment:
+      POSTGRES_USER: blackwood_user
+      POSTGRES_PASSWORD: blackwood_password
+      POSTGRES_DB: blackwood_anomaly
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
