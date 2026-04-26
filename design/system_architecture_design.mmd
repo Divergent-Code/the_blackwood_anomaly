@@ -1,0 +1,24 @@
+graph TD
+    %% Client Layer
+    Client[Client Interface: Web/CLI/Bot] -->|REST API HTTP Requests| Gateway[FastAPI: Application Gateway]
+
+    %% Backend Services
+    subgraph FastAPI Backend Services
+        Gateway -->|Route: /sessions| SessionSvc[Session Manager]
+        Gateway -->|Route: /actions| EngineSvc[Game Engine Service]
+        
+        EngineSvc -->|1. Fetch State| SessionSvc
+        EngineSvc -->|2. Query Context| RAGSvc[RAG Retrieval Service]
+        EngineSvc -->|3. Generate Story| LLMSvc[LLM Integration Service]
+        EngineSvc -->|4. Update State| SessionSvc
+    end
+
+    %% Data Layer
+    subgraph Data & State Persistence
+        SessionSvc -->|Read/Write State| DB[(PostgreSQL Database)]
+        RAGSvc -->|Read Embeddings| VectorDB[(pgvector / Local Cache)]
+    end
+
+    %% External APIs
+    LLMSvc -->|gRPC/REST| GeminiAPI((Google Gemini API))
+    RAGSvc -->|Embedding Generation| GeminiAPI
