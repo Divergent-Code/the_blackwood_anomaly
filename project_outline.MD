@@ -26,7 +26,7 @@ Reliability Testing: Automated pytest scripts to verify input validation and rul
 
 [x] Phase 3: Core Logic (main.py game loop and RAG integration)
 
-[ ] Phase 4: Reliability & Testing (test_game.py automated harness)
+[x] Phase 4: Reliability & Testing (test_game.py automated harness)
 
 [ ] Phase 5: Reflection & Ethics (model_card.md drafted)
 
