@@ -66,3 +66,7 @@ A FastAPI security dependency. Extracts the Bearer token from the `Authorization
 ### `format_chat_history(session_history: list, new_prompt: str) -> list`
 
 Transforms the JSON history stored in the PostgreSQL database into the specific nested-dictionary format required by the Google GenAI SDK (`{"role": "...", "parts": [{"text": "..."}]}`). It appends the new `augmented_prompt` to the end of the history array.
+
+### `roll_d20(difficulty_class: int) -> str`
+
+A Python tool registered with the Gemini model to act as a "Dice Roller" agent. Instead of arbitrarily deciding player success, the AI can invoke this function with a target difficulty class. The FastAPI backend intercepts the `function_call`, executes the dice roll mathematically, records the action in the `agent_actions` array, and returns the result to Gemini to dictate the final narrative outcome.

@@ -4,9 +4,11 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from google import genai # Using the modern GenAI client for isolated requests
+from google.genai import types
 from sqlalchemy.orm import Session
 from database import get_db, GameSession
 import re
+import random
 from rag import rag_engine
 
 # --- Constants & Prompts ---
@@ -60,6 +62,20 @@ class GameResponse(BaseModel):
     health: int
     stress: int
     narrative: str
+    agent_actions: list[str] = []
+
+# --- Tool Definitions ---
+def roll_d20(difficulty_class: int) -> str:
+    """Rolls a 20-sided die to determine the success or failure of a risky player action.
+    
+    Args:
+        difficulty_class: The target number (1-20) to meet or exceed for success. Higher is harder.
+    """
+    roll = random.randint(1, 20)
+    if roll >= difficulty_class:
+        return f"Roll: {roll} >= {difficulty_class}. Success."
+    else:
+        return f"Roll: {roll} < {difficulty_class}. Failure."
 
 # --- API Endpoints ---
 @app.post("/api/v1/sessions", response_model=GameResponse)
@@ -91,7 +107,8 @@ async def create_session(
             session_id=new_session.id,
             health=new_session.health,
             stress=new_session.stress,
-            narrative=response.text
+            narrative=response.text,
+            agent_actions=[]
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI Engine Error: {str(e)}")
@@ -130,11 +147,40 @@ Player: {request.action}
     try:
         formatted_history = format_chat_history(session.history, augmented_prompt)
         
+        agent_actions = []
+        
         response = client.models.generate_content(
             model='gemini-2.5-flash',
             contents=formatted_history,
-            config={"system_instruction": SYSTEM_PROMPT_ACTION}
+            config={"system_instruction": SYSTEM_PROMPT_ACTION, "tools": [roll_d20]}
         )
+        
+        # Handle Tool Calling Interception
+        if response.function_calls:
+            for fc in response.function_calls:
+                if fc.name == "roll_d20":
+                    dc = int(fc.args.get("difficulty_class", 10))
+                    result_str = roll_d20(dc)
+                    
+                    agent_actions.append(f"Used Tool: roll_d20({dc}) -> {result_str}")
+                    
+                    # Append the model's function call to history
+                    formatted_history.append(response.candidates[0].content)
+                    
+                    # Append the function response to history
+                    func_resp_part = types.Part.from_function_response(
+                        name=fc.name,
+                        response={"result": result_str}
+                    )
+                    formatted_history.append({"role": "user", "parts": [func_resp_part]})
+                    
+            # Make the second call to get the narrative based on the tool result
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=formatted_history,
+                config={"system_instruction": SYSTEM_PROMPT_ACTION, "tools": [roll_d20]}
+            )
+            
         ai_text = response.text
         
         # 5. Extract State via Regex
@@ -158,7 +204,8 @@ Player: {request.action}
             session_id=session.id,
             health=session.health,
             stress=session.stress,
-            narrative=ai_text
+            narrative=ai_text,
+            agent_actions=agent_actions
         )
         
     except Exception as e:
