@@ -22,11 +22,11 @@ Reads a local Markdown file and splits it into discrete chunks based on `##` hea
   * `filename`: The path to the markdown file.
   * `prefix`: A tag (e.g., `LORE`, `MECHANICS`) prepended to the title of the chunk to help the LLM identify the source of the rule.
 
-#### `_ensure_document_embeddings(self, client: genai.Client)`
+#### `async _ensure_document_embeddings(self, client: genai.Client)`
 
-A lazy-loading mechanism. When the first API request comes in containing a valid Gemini API key, this function embeds the knowledge base chunks using that user's key and caches them for the lifetime of the server instance.
+A lazy-loading mechanism utilizing `asyncio.Lock()` for thread safety. When the first API request comes in containing a valid Gemini API key, this function embeds the knowledge base chunks using that user's key and caches them for the lifetime of the server instance. The async lock prevents race conditions during concurrent authentication requests.
 
-#### `retrieve(self, client: genai.Client, query: str, top_k: int = 2) -> list`
+#### `async retrieve(self, client: genai.Client, query: str, top_k: int = 2) -> list`
 
 Embeds the incoming player query and performs a pure-Python cosine similarity search against the cached knowledge base.
 

@@ -19,12 +19,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Changed
 
 - **RAG Engine Refactor (`rag.py`)**: Upgraded the local Markdown chunking and cosine similarity system. Embeddings are now lazy-loaded on the first authenticated request rather than at boot time.
+- **Asynchronous RAG Retrieval**: Refactored `rag.py` to use `asyncio.Lock()` and async methods (`retrieve`, `_ensure_document_embeddings`) to prevent race conditions when multiple players authenticate simultaneously.
 - **Model Migration**: Explicitly pinned the AI model to `gemini-2.5-flash` for high-speed, text-based narrative generation.
 - **State Management**: Player vitals (Health, Stress) are now persistently tracked in the database and explicitly injected into the LLM's system prompt on every stateless turn.
 
 ### Deprecated
 
-- **Terminal Loop (`main.py`)**: The original terminal-based interaction script is retained for archival purposes but is no longer the primary entry point for the engine.
+- **Terminal Loop (`legacy/main.py`)**: The original terminal-based interaction script was moved to `legacy/main.py` and is retained for archival purposes but is no longer the primary entry point for the engine.
 
 ## [0.1.0] - Initial Prototype
 
