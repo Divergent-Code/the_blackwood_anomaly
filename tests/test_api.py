@@ -2,7 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 
 import os
 import sys
@@ -10,7 +10,7 @@ import sys
 # Add the parent directory to the path so we can import api and database
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from api import app, get_db, get_gemini_client
+from api import app, get_db, get_llm_provider
 from database import Base, GameSession
 
 # ==========================================
@@ -49,18 +49,17 @@ client = TestClient(app)
 # 2. Test Cases
 # ==========================================
 
-@patch("api.genai.Client")
-def test_create_session(mock_client_class):
+def test_create_session():
     """Tests if a new game session is created and saved to the DB correctly."""
     
     # Mock the LLM Response
     mock_instance = MagicMock()
     mock_response = MagicMock()
     mock_response.text = "You wake up in a freezing dark room. [Health: 100% | Stress: 0%]"
-    mock_instance.models.generate_content.return_value = mock_response
+    mock_instance.generate_content = AsyncMock(return_value=mock_response)
     
     # Inject the mocked client
-    app.dependency_overrides[get_gemini_client] = lambda: mock_instance
+    app.dependency_overrides[get_llm_provider] = lambda: mock_instance
 
     # Make the Request
     response = client.post(
@@ -78,8 +77,7 @@ def test_create_session(mock_client_class):
     assert "agent_actions" in data
 
 @patch("api.rag_engine.retrieve")
-@patch("api.genai.Client")
-def test_submit_action_and_state_update(mock_client_class, mock_rag_retrieve):
+def test_submit_action_and_state_update(mock_rag_retrieve):
     """Tests if a player action properly retrieves RAG context, calls AI, and updates DB state."""
     
     # 1. Seed the test database with a mock session
@@ -99,9 +97,9 @@ def test_submit_action_and_state_update(mock_client_class, mock_rag_retrieve):
     mock_response = MagicMock()
     mock_response.function_calls = None
     mock_response.text = "The monster hears you and attacks! [Health: 80% | Stress: 35%]"
-    mock_instance.models.generate_content.return_value = mock_response
+    mock_instance.generate_content = AsyncMock(return_value=mock_response)
     
-    app.dependency_overrides[get_gemini_client] = lambda: mock_instance
+    app.dependency_overrides[get_llm_provider] = lambda: mock_instance
 
     # 4. Make the Request
     response = client.post(

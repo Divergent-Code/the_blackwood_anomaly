@@ -1,15 +1,14 @@
-from fastapi import FastAPI, Depends, HTTPException, Security
+from fastapi import FastAPI, Depends, HTTPException, Security, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from google import genai # Using the modern GenAI client for isolated requests
-from google.genai import types
 from sqlalchemy.orm import Session
 from database import get_db, GameSession
 import re
 import random
 from rag import rag_engine
+from llm_provider import LLMProvider, GeminiProvider
 
 # --- Constants & Prompts ---
 SYSTEM_PROMPT_START = "You are a horror Game Master. The game has just started..."
@@ -28,30 +27,29 @@ async def serve_frontend():
 # Security schema to extract the Bearer token (The User's API Key)
 security = HTTPBearer()
 
-def get_gemini_client(credentials: HTTPAuthorizationCredentials = Security(security)):
+def get_llm_provider(
+    credentials: HTTPAuthorizationCredentials = Security(security),
+    x_llm_provider: str = Header("gemini", alias="X-LLM-Provider")
+):
     """
     Dependency function: Extracts the user's API key from the Authorization header
-    and returns a fresh, isolated Gemini client for this specific request.
+    and returns a fresh, isolated LLM Provider for this specific request.
+    Can be configured via X-LLM-Provider header (default: gemini).
     """
     user_api_key = credentials.credentials
     if not user_api_key:
-        raise HTTPException(status_code=401, detail="Missing Google API Key")
+        raise HTTPException(status_code=401, detail="Missing API Key")
     
-    # Instantiate an isolated client. No global state!
+    # Instantiate an isolated provider. No global state!
     try:
-        return genai.Client(api_key=user_api_key)
+        if x_llm_provider.lower() == "openai":
+            from llm_provider import OpenAIProvider
+            return OpenAIProvider(api_key=user_api_key)
+        else:
+            from llm_provider import GeminiProvider
+            return GeminiProvider(api_key=user_api_key)
     except Exception as e:
         raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
-
-def format_chat_history(session_history: list, new_prompt: str) -> list:
-    """Formats the DB JSON history into the structure expected by the Gemini SDK."""
-    formatted_history = []
-    for msg in session_history:
-        text_content = msg.get("content", msg.get("text", ""))
-        formatted_history.append({"role": msg["role"], "parts": [{"text": text_content}]})
-    
-    formatted_history.append({"role": "user", "parts": [{"text": new_prompt}]})
-    return formatted_history
 
 # --- Request/Response Models ---
 class ActionRequest(BaseModel):
@@ -78,17 +76,16 @@ def roll_d20(difficulty_class: int) -> str:
 # --- API Endpoints ---
 @app.post("/api/v1/sessions", response_model=GameResponse)
 async def create_session(
-    client: genai.Client = Depends(get_gemini_client),
+    llm: LLMProvider = Depends(get_llm_provider),
     db: Session = Depends(get_db)
 ):
     """Initializes a new game using the player's provided API key."""
     
     try:
-        # We pass the prompt directly using the user's isolated client
-        response = client.models.generate_content(
+        response = await llm.generate_content(
             model='gemini-2.5-flash',
-            contents="Describe the terrifying room the player wakes up in.",
-            config={"system_instruction": SYSTEM_PROMPT_START}
+            system_instruction=SYSTEM_PROMPT_START,
+            messages=[{"role": "user", "content": "Describe the terrifying room the player wakes up in."}]
         )
         
         # Save new session to database
@@ -115,7 +112,7 @@ async def create_session(
 async def submit_action(
     session_id: str, 
     request: ActionRequest, 
-    client: genai.Client = Depends(get_gemini_client),
+    llm: LLMProvider = Depends(get_llm_provider),
     db: Session = Depends(get_db)
 ):
     """Processes a player's action, utilizing RAG and saving state to the DB."""
@@ -127,7 +124,7 @@ async def submit_action(
 
     # 2. Formulate state-aware query and fetch RAG Context
     retrieval_query = f"Player State: {session.health}% Health, {session.stress}% Stress. Action: {request.action}"
-    retrieved_chunks = await rag_engine.retrieve(client, retrieval_query, top_k=2)
+    retrieved_chunks = await rag_engine.retrieve(llm, retrieval_query, top_k=2)
     
     rag_context_str = "\n\n".join([chunk['content'] for chunk in retrieved_chunks])
     
@@ -143,51 +140,39 @@ Player: {request.action}
 
     # 4. Call the LLM (Passing the JSON history for memory)
     try:
-        formatted_history = format_chat_history(session.history, augmented_prompt)
+        messages = list(session.history)
+        messages.append({"role": "user", "content": augmented_prompt})
         agent_actions = [] # Array to track observable steps
         
         # 4. First LLM Call (Passing the Tool)
-        response = client.models.generate_content(
+        response = await llm.generate_content(
             model='gemini-2.5-flash',
-            contents=formatted_history,
-            config={
-                "system_instruction": SYSTEM_PROMPT_ACTION,
-                "tools": [roll_d20] # Provide the tool to the AI
-            }
+            system_instruction=SYSTEM_PROMPT_ACTION,
+            messages=messages,
+            tools=[roll_d20]
         )
         
         # 5. Agentic Loop: Check if the AI decided to use the tool
         if response.function_calls:
+            tool_results = []
             for tool_call in response.function_calls:
                 if tool_call.name == "roll_d20":
                     # Execute the Python logic
-                    dc = int(tool_call.args.get("difficulty_class", 10))
+                    dc = int(tool_call.arguments.get("difficulty_class", 10))
                     tool_result = roll_d20(dc)
                     
                     # Log the intermediate step for the grader to see
                     agent_actions.append(f"⚙️ Planner Agent decided to roll_d20(DC={dc}) -> {tool_result}")
-                    
-                    # Append the AI's tool request to history
-                    formatted_history.append(response.candidates[0].content)
-                    
-                    # Append the Python tool result to history
-                    formatted_history.append(
-                        types.Content(
-                            role="tool",
-                            parts=[
-                                types.Part.from_function_response(
-                                    name="roll_d20",
-                                    response={"result": tool_result}
-                                )
-                            ]
-                        )
-                    )
+                    tool_results.append({"name": "roll_d20", "result": tool_result})
             
             # Second LLM Call: Now that it has the dice roll, generate the final story
-            response = client.models.generate_content(
+            response = await llm.generate_with_tool_result(
                 model='gemini-2.5-flash',
-                contents=formatted_history,
-                config={"system_instruction": SYSTEM_PROMPT_ACTION}
+                system_instruction=SYSTEM_PROMPT_ACTION,
+                messages=messages,
+                previous_response=response,
+                tool_results=tool_results,
+                tools=[roll_d20]
             )
         else:
             agent_actions.append("⚙️ Planner Agent logic: No tool required. Generating directly.")

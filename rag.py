@@ -1,7 +1,7 @@
 import math
 import re
 import asyncio
-from google import genai
+from llm_provider import LLMProvider
 
 def cosine_similarity(v1, v2):
     """Pure Python dot-product implementation."""
@@ -42,7 +42,7 @@ class RAGEngine:
             if body:
                 self.chunks.append({"title": title, "content": f"{title}\n{body}", "embedding": None})
 
-    async def _ensure_document_embeddings(self, client: genai.Client):
+    async def _ensure_document_embeddings(self, llm: LLMProvider):
         """Lazy-loads document embeddings using the first available user key."""
         if self.embeddings_cached or not self.chunks:
             return
@@ -54,25 +54,16 @@ class RAGEngine:
                 
             print("⚙️ [RAG Engine] Generating knowledge base embeddings via user key...")
             for chunk in self.chunks:
-                response = client.models.embed_content(
-                    model=self.model_name,
-                    contents=chunk["content"]
-                )
-                # The new SDK returns a list of embeddings; grab the values of the first one
-                chunk["embedding"] = response.embeddings[0].values
+                chunk["embedding"] = await llm.embed_content(self.model_name, chunk["content"])
                 
             self.embeddings_cached = True
 
-    async def retrieve(self, client: genai.Client, query: str, top_k=2):
+    async def retrieve(self, llm: LLMProvider, query: str, top_k=2):
         """Embeds the state-aware query and returns the most relevant rules."""
-        await self._ensure_document_embeddings(client)
+        await self._ensure_document_embeddings(llm)
         
         # Embed the player's query
-        query_response = client.models.embed_content(
-            model=self.model_name,
-            contents=query
-        )
-        query_embedding = query_response.embeddings[0].values
+        query_embedding = await llm.embed_content(self.model_name, query)
         
         # Calculate similarity
         scored_chunks = []
