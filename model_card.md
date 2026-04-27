@@ -2,7 +2,7 @@
 
 ## Model Details
 
-* **Developer:** The applied_ai-system_final project team.
+* **Developer:** The Blackwood Asylum project team.
 * **Model Version:** v1.0
 * **Base Model:** Gemini 2.5 Flash
 * **Task:** Text-based survival horror Game Master orchestration and state extraction.
