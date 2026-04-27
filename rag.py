@@ -16,7 +16,7 @@ class RAGEngine:
     def __init__(self):
         self.chunks = []
         self.model_name = "text-embedding-004"
-        self.embeddings_cached = False
+        self.embeddings_cached = {}
         self._lock = asyncio.Lock()
         self._parse_markdown("data/world_lore.md", "LORE")
         self._parse_markdown("data/combat_mechanics.md", "MECHANICS")
@@ -44,23 +44,25 @@ class RAGEngine:
 
     async def _ensure_document_embeddings(self, llm: LLMProvider):
         """Lazy-loads document embeddings using the first available user key."""
-        if self.embeddings_cached or not self.chunks:
+        provider_name = type(llm).__name__
+        if self.embeddings_cached.get(provider_name) or not self.chunks:
             return
             
         async with self._lock:
             # Double check in case another request already populated them while we were waiting for the lock
-            if self.embeddings_cached:
+            if self.embeddings_cached.get(provider_name):
                 return
                 
-            print("⚙️ [RAG Engine] Generating knowledge base embeddings via user key...")
+            print(f"⚙️ [RAG Engine] Generating knowledge base embeddings via user key ({provider_name})...")
             for chunk in self.chunks:
-                chunk["embedding"] = await llm.embed_content(self.model_name, chunk["content"])
+                chunk[f"embedding_{provider_name}"] = await llm.embed_content(self.model_name, chunk["content"])
                 
-            self.embeddings_cached = True
+            self.embeddings_cached[provider_name] = True
 
     async def retrieve(self, llm: LLMProvider, query: str, top_k=2):
         """Embeds the state-aware query and returns the most relevant rules."""
         await self._ensure_document_embeddings(llm)
+        provider_name = type(llm).__name__
         
         # Embed the player's query
         query_embedding = await llm.embed_content(self.model_name, query)
@@ -68,8 +70,9 @@ class RAGEngine:
         # Calculate similarity
         scored_chunks = []
         for chunk in self.chunks:
-            if chunk["embedding"]:
-                score = cosine_similarity(query_embedding, chunk["embedding"])
+            chunk_embedding = chunk.get(f"embedding_{provider_name}")
+            if chunk_embedding:
+                score = cosine_similarity(query_embedding, chunk_embedding)
                 scored_chunks.append((score, chunk))
                 
         scored_chunks.sort(key=lambda x: x[0], reverse=True)
