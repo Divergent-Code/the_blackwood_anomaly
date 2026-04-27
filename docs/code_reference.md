@@ -59,13 +59,13 @@ A FastAPI dependency generator that creates a localized SQLAlchemy `SessionLocal
 
 ## 3. API Utilities (`api.py`)
 
-### `get_gemini_client(credentials: HTTPAuthorizationCredentials)`
+### `get_llm_provider(credentials: HTTPAuthorizationCredentials, x_llm_provider: str)`
 
-A FastAPI security dependency. Extracts the Bearer token from the `Authorization` HTTP header and uses it to instantiate an isolated `genai.Client`. If the key is missing or invalid, it raises an `HTTPException`.
+A FastAPI security dependency. Extracts the Bearer token from the `Authorization` HTTP header and instantiates an isolated `LLMProvider` (`GeminiProvider` or `OpenAIProvider`) based on the `X-LLM-Provider` header.
 
-### `format_chat_history(session_history: list, new_prompt: str) -> list`
+## 4. LLM Providers (`llm_provider.py`)
 
-Transforms the JSON history stored in the PostgreSQL database into the specific nested-dictionary format required by the Google GenAI SDK (`{"role": "...", "parts": [{"text": "..."}]}`). It appends the new `augmented_prompt` to the end of the history array.
+Abstracts the underlying LLM SDKs to provide a unified `generate_content` and `generate_with_tool_result` interface, handling message formatting, tool definitions, and tool result passing across different models.
 
 ### `roll_d20(difficulty_class: int) -> str`
 

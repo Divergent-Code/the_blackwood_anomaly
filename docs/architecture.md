@@ -34,8 +34,9 @@ flowchart TD
 
 The central orchestrator of the game. It handles routing, dependency injection, and security.
 
-- **Stateless BYOK:** The server does not store a global API key. Instead, it uses FastAPI's `Security` and `HTTPBearer` dependencies to extract the user's API key from the incoming request and instantiate an isolated `genai.Client`.
-- **Regex State Extraction:** After the LLM generates a narrative response, the API parses the required `[Health: X% | Stress: Y%]` suffix using Regular Expressions, decoupling the narrative generation from hard state management.
+- **Stateless BYOK:** The server extracts the user's API key from the incoming request and instantiates an isolated `LLMProvider`. Supports both Gemini and OpenAI via the `X-LLM-Provider` header.
+- **Agentic Loop:** The API handles `function_calls` from the LLM, executing local Python tools (like `roll_d20`), and feeding the results back for a final generated narrative.
+- **Regex State Extraction:** After the LLM generates a narrative response, the API parses the required `[Health: X% | Stress: Y%]` suffix using Regular Expressions.
 
 ### 2. RAG Engine Singleton (`rag.py`)
 

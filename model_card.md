@@ -4,14 +4,14 @@
 
 * **Developer:** The Blackwood Anomaly project team.
 * **Model Version:** V1.0
-* **Base Model:** Gemini 2.5 Flash
-* **Task:** Text-based survival horror Game Master orchestration and state extraction.
-* **Architecture:** Large Language Model (LLM) utilizing a stateless Retrieval-Augmented Generation (RAG) pipeline via `google-genai` and FastAPI.
+* **Base Models:** Gemini 2.5 Flash & OpenAI GPT-4o-mini
+* **Task:** Text-based survival horror Game Master orchestration, state extraction, and Agentic Tool Calling.
+* **Architecture:** Large Language Model (LLM) utilizing a stateless Retrieval-Augmented Generation (RAG) pipeline via FastAPI and an abstract `LLMProvider`.
 
 ## Intended Use
 
 * **Primary Use Case:** To dynamically generate atmospheric, engaging, and terrifying horror narratives in response to player text inputs within a controlled, persistent game session.
-* **Secondary Use Case:** To parse player intent and apply strict game mechanics (Health and Stress modifications) by outputting a predictable Regex-parsable state format at the end of each response.
+* **Secondary Use Case:** To parse player intent and apply strict game mechanics by (1) utilizing Python tools (like `roll_d20`) autonomously and (2) outputting a predictable Regex-parsable state format at the end of each response.
 * **Out-of-Scope:** This model is strictly bounded to the game's universe and mechanics. It is not intended to provide real-world advice, hold casual conversations, or generate non-horror related creative writing.
 
 ## Training Data & Retrieval Context

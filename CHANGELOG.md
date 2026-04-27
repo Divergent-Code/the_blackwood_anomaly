@@ -9,9 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Added
 
 - **FastAPI REST API (`api.py`)**: Migrated the core game loop from a local terminal script to a fully functional, stateless REST API.
+- **Multi-LLM Abstraction (`llm_provider.py`)**: Abstracted the AI engine to support both Gemini and OpenAI models via the `X-LLM-Provider` header.
+- **Agentic Tool Calling**: The Game Master can now autonomously decide to invoke the `roll_d20` Python function for dice rolls.
+- **Agent Action Tracing**: Added the `agent_actions` array to `GameResponse` to log intermediate agent planning steps to the client.
 - **Medical Brutalism UI (`static/index.html`)**: Added a browser-based frontend for interacting with the AI Game Master.
 - **Database Persistence (`database.py`)**: Implemented SQLAlchemy ORM to track game sessions, health, stress, and conversation histories. Includes support for both local SQLite and containerized PostgreSQL.
-- **BYOK Authentication**: Integrated `HTTPBearer` security to require users to supply their own Google Gemini API key, ensuring zero host billing.
+- **BYOK Authentication**: Integrated `HTTPBearer` security to require users to supply their own Gemini or OpenAI API key, ensuring zero host billing.
 - **Automated Testing (`tests/`)**: Added a comprehensive `pytest` harness using `FastAPI.TestClient` and `unittest.mock` to validate regex state extraction and RAG behavior without consuming API quota.
 - **Comprehensive Documentation Suite**: Added API reference, architecture diagrams, setup guides, and a contributor Wiki.
 - **Docker Compose Setup**: Added `docker-compose.yml` for rapid, consistent database deployments.
