@@ -5,6 +5,7 @@ Welcome to The Blackwood Anomaly! This guide will walk you through setting up th
 ## Prerequisites
 
 Before you begin, ensure you have the following installed:
+
 - **Python 3.10+**
 - **Docker & Docker Compose** (Optional, but highly recommended for the PostgreSQL database)
 - A valid **Google Gemini API Key**. You can obtain one from [Google AI Studio](https://aistudio.google.com/).
@@ -42,10 +43,13 @@ The Blackwood Anomaly uses SQLAlchemy and defaults to a local SQLite database (`
 **To run with PostgreSQL (Recommended):**
 
 1. Start the Docker container:
+
    ```bash
    docker-compose up -d
    ```
+
 2. Create a `.env` file in the root directory and set the `DATABASE_URL`:
+
    ```env
    DATABASE_URL=postgresql://user:password@localhost:5432/blackwood
    ```
@@ -92,13 +96,16 @@ You should see all tests pass, validating the RAG engine initialization, the API
 ## Troubleshooting
 
 ### "🚨 WARNING: RAG document missing."
+
 **Cause:** The application cannot find `world_lore.md` or `combat_mechanics.md`.
 **Fix:** Ensure you are running the `uvicorn` command from the root directory of the project, so the relative paths to the `data/` directory resolve correctly.
 
 ### "401 Unauthorized"
+
 **Cause:** You did not provide a Gemini API Key, or the key provided is invalid.
 **Fix:** Double-check your API key in Google AI Studio. Ensure you haven't hit your rate limits.
 
 ### "SQLite thread errors"
+
 **Cause:** You are running concurrent requests against the SQLite fallback database.
 **Fix:** SQLite is meant for single-user testing. For robust multi-session support, please use the provided Docker Compose file to spin up the PostgreSQL database.

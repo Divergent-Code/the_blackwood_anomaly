@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [1.0.0] - 2026-04-27
 
 ### Added
+
 - **FastAPI REST API (`api.py`)**: Migrated the core game loop from a local terminal script to a fully functional, stateless REST API.
 - **Medical Brutalism UI (`static/index.html`)**: Added a browser-based frontend for interacting with the AI Game Master.
 - **Database Persistence (`database.py`)**: Implemented SQLAlchemy ORM to track game sessions, health, stress, and conversation histories. Includes support for both local SQLite and containerized PostgreSQL.
@@ -16,16 +17,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **Docker Compose Setup**: Added `docker-compose.yml` for rapid, consistent database deployments.
 
 ### Changed
+
 - **RAG Engine Refactor (`rag.py`)**: Upgraded the local Markdown chunking and cosine similarity system. Embeddings are now lazy-loaded on the first authenticated request rather than at boot time.
 - **Model Migration**: Explicitly pinned the AI model to `gemini-2.5-flash` for high-speed, text-based narrative generation.
 - **State Management**: Player vitals (Health, Stress) are now persistently tracked in the database and explicitly injected into the LLM's system prompt on every stateless turn.
 
 ### Deprecated
+
 - **Terminal Loop (`main.py`)**: The original terminal-based interaction script is retained for archival purposes but is no longer the primary entry point for the engine.
 
 ## [0.1.0] - Initial Prototype
 
-### Added
+### Initial Release
+
 - Created the initial terminal-based `main.py` game loop.
 - Drafted `world_lore.md` and `combat_mechanics.md` to serve as the narrative boundaries.
 - Implemented a basic pure-Python cosine similarity function for retrieving text chunks.
