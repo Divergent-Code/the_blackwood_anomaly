@@ -112,7 +112,7 @@ async def submit_action(
 
     # 2. Formulate state-aware query and fetch RAG Context
     retrieval_query = f"Player State: {session.health}% Health, {session.stress}% Stress. Action: {request.action}"
-    retrieved_chunks = rag_engine.retrieve(client, retrieval_query, top_k=2)
+    retrieved_chunks = await rag_engine.retrieve(client, retrieval_query, top_k=2)
     
     rag_context_str = "\n\n".join([chunk['content'] for chunk in retrieved_chunks])
     
@@ -142,6 +142,8 @@ Player: {request.action}
         if match:
             session.health = int(match.group(1))
             session.stress = int(match.group(2))
+        else:
+            print(f"⚠️ WARNING: Regex extraction failed for AI response. Retaining previous state. Response: {ai_text}")
             
         # 6. Update DB History & Commit
         new_history = list(session.history)

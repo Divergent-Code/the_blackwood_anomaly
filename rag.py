@@ -1,5 +1,6 @@
 import math
 import re
+import asyncio
 from google import genai
 
 def cosine_similarity(v1, v2):
@@ -16,6 +17,7 @@ class RAGEngine:
         self.chunks = []
         self.model_name = "text-embedding-004"
         self.embeddings_cached = False
+        self._lock = asyncio.Lock()
         self._parse_markdown("data/world_lore.md", "LORE")
         self._parse_markdown("data/combat_mechanics.md", "MECHANICS")
 
@@ -40,25 +42,30 @@ class RAGEngine:
             if body:
                 self.chunks.append({"title": title, "content": f"{title}\n{body}", "embedding": None})
 
-    def _ensure_document_embeddings(self, client: genai.Client):
+    async def _ensure_document_embeddings(self, client: genai.Client):
         """Lazy-loads document embeddings using the first available user key."""
         if self.embeddings_cached or not self.chunks:
             return
             
-        print("⚙️ [RAG Engine] Generating knowledge base embeddings via user key...")
-        for chunk in self.chunks:
-            response = client.models.embed_content(
-                model=self.model_name,
-                contents=chunk["content"]
-            )
-            # The new SDK returns a list of embeddings; grab the values of the first one
-            chunk["embedding"] = response.embeddings[0].values
-            
-        self.embeddings_cached = True
+        async with self._lock:
+            # Double check in case another request already populated them while we were waiting for the lock
+            if self.embeddings_cached:
+                return
+                
+            print("⚙️ [RAG Engine] Generating knowledge base embeddings via user key...")
+            for chunk in self.chunks:
+                response = client.models.embed_content(
+                    model=self.model_name,
+                    contents=chunk["content"]
+                )
+                # The new SDK returns a list of embeddings; grab the values of the first one
+                chunk["embedding"] = response.embeddings[0].values
+                
+            self.embeddings_cached = True
 
-    def retrieve(self, client: genai.Client, query: str, top_k=2):
+    async def retrieve(self, client: genai.Client, query: str, top_k=2):
         """Embeds the state-aware query and returns the most relevant rules."""
-        self._ensure_document_embeddings(client)
+        await self._ensure_document_embeddings(client)
         
         # Embed the player's query
         query_response = client.models.embed_content(
