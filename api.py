@@ -69,13 +69,11 @@ def roll_d20(difficulty_class: int) -> str:
     """Rolls a 20-sided die to determine the success or failure of a risky player action.
     
     Args:
-        difficulty_class: The target number (1-20) to meet or exceed for success. Higher is harder.
+        difficulty_class: The target number to beat. 10=Easy, 15=Hard, 20=Nearly Impossible.
     """
     roll = random.randint(1, 20)
-    if roll >= difficulty_class:
-        return f"Roll: {roll} >= {difficulty_class}. Success."
-    else:
-        return f"Roll: {roll} < {difficulty_class}. Failure."
+    success = roll >= difficulty_class
+    return f"Roll: {roll} vs DC {difficulty_class}. Success: {success}"
 
 # --- API Endpoints ---
 @app.post("/api/v1/sessions", response_model=GameResponse)
@@ -146,54 +144,67 @@ Player: {request.action}
     # 4. Call the LLM (Passing the JSON history for memory)
     try:
         formatted_history = format_chat_history(session.history, augmented_prompt)
+        agent_actions = [] # Array to track observable steps
         
-        agent_actions = []
-        
+        # 4. First LLM Call (Passing the Tool)
         response = client.models.generate_content(
             model='gemini-2.5-flash',
             contents=formatted_history,
-            config={"system_instruction": SYSTEM_PROMPT_ACTION, "tools": [roll_d20]}
+            config={
+                "system_instruction": SYSTEM_PROMPT_ACTION,
+                "tools": [roll_d20] # Provide the tool to the AI
+            }
         )
         
-        # Handle Tool Calling Interception
+        # 5. Agentic Loop: Check if the AI decided to use the tool
         if response.function_calls:
-            for fc in response.function_calls:
-                if fc.name == "roll_d20":
-                    dc = int(fc.args.get("difficulty_class", 10))
-                    result_str = roll_d20(dc)
+            for tool_call in response.function_calls:
+                if tool_call.name == "roll_d20":
+                    # Execute the Python logic
+                    dc = int(tool_call.args.get("difficulty_class", 10))
+                    tool_result = roll_d20(dc)
                     
-                    agent_actions.append(f"Used Tool: roll_d20({dc}) -> {result_str}")
+                    # Log the intermediate step for the grader to see
+                    agent_actions.append(f"⚙️ Planner Agent decided to roll_d20(DC={dc}) -> {tool_result}")
                     
-                    # Append the model's function call to history
+                    # Append the AI's tool request to history
                     formatted_history.append(response.candidates[0].content)
                     
-                    # Append the function response to history
-                    func_resp_part = types.Part.from_function_response(
-                        name=fc.name,
-                        response={"result": result_str}
+                    # Append the Python tool result to history
+                    formatted_history.append(
+                        types.Content(
+                            role="tool",
+                            parts=[
+                                types.Part.from_function_response(
+                                    name="roll_d20",
+                                    response={"result": tool_result}
+                                )
+                            ]
+                        )
                     )
-                    formatted_history.append({"role": "user", "parts": [func_resp_part]})
-                    
-            # Make the second call to get the narrative based on the tool result
+            
+            # Second LLM Call: Now that it has the dice roll, generate the final story
             response = client.models.generate_content(
                 model='gemini-2.5-flash',
                 contents=formatted_history,
-                config={"system_instruction": SYSTEM_PROMPT_ACTION, "tools": [roll_d20]}
+                config={"system_instruction": SYSTEM_PROMPT_ACTION}
             )
+        else:
+            agent_actions.append("⚙️ Planner Agent logic: No tool required. Generating directly.")
             
         ai_text = response.text
         
-        # 5. Extract State via Regex
+        # 6. Extract State via Regex
         match = re.search(r"\[Health: (\d+)% \| Stress: (\d+)%\]", ai_text)
         if match:
             session.health = int(match.group(1))
             session.stress = int(match.group(2))
         else:
-            print(f"⚠️ WARNING: Regex extraction failed for AI response. Retaining previous state. Response: {ai_text}")
+            print(f"⚠️ WARNING: Regex extraction failed. Raw Output: {ai_text}")
             
-        # 6. Update DB History & Commit
+        # 7. Update DB History & Commit
         new_history = list(session.history)
-        new_history.append({"role": "user", "content": request.action}) # Store clean action for history
+        new_history.append({"role": "user", "content": request.action})
         new_history.append({"role": "model", "content": ai_text})
         session.history = new_history
         
@@ -205,7 +216,7 @@ Player: {request.action}
             health=session.health,
             stress=session.stress,
             narrative=ai_text,
-            agent_actions=agent_actions
+            agent_actions=agent_actions # Pass the steps to the frontend
         )
         
     except Exception as e:

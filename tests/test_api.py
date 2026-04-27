@@ -75,6 +75,7 @@ def test_create_session(mock_client_class):
     assert data["health"] == 100
     assert data["stress"] == 0
     assert "freezing dark room" in data["narrative"]
+    assert "agent_actions" in data
 
 @patch("api.rag_engine.retrieve")
 @patch("api.genai.Client")
@@ -96,6 +97,7 @@ def test_submit_action_and_state_update(mock_client_class, mock_rag_retrieve):
     # 3. Mock LLM Response (Simulating taking damage)
     mock_instance = MagicMock()
     mock_response = MagicMock()
+    mock_response.function_calls = None
     mock_response.text = "The monster hears you and attacks! [Health: 80% | Stress: 35%]"
     mock_instance.models.generate_content.return_value = mock_response
     
@@ -114,3 +116,4 @@ def test_submit_action_and_state_update(mock_client_class, mock_rag_retrieve):
     assert data["health"] == 80  # Proves Regex extracted the new state
     assert data["stress"] == 35  # Proves Regex extracted the new state
     assert "monster hears you" in data["narrative"]
+    assert "agent_actions" in data
