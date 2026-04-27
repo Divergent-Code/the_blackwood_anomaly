@@ -2,7 +2,7 @@ import os
 import re
 import math
 from dotenv import load_dotenv
-import google.generativeai as genai
+from google import genai
 
 # Load environment variables from the .env file
 load_dotenv()
@@ -13,7 +13,7 @@ if not api_key:
     print("🚨 ERROR: GOOGLE_API_KEY not found. Please check your .env file.")
     exit(1)
 
-genai.configure(api_key=api_key)
+client = genai.Client(api_key=api_key)
 
 def cosine_similarity(v1, v2):
     dot_product = sum(a * b for a, b in zip(v1, v2))
@@ -24,9 +24,10 @@ def cosine_similarity(v1, v2):
     return dot_product / (magnitude_v1 * magnitude_v2)
 
 class RAGEngine:
-    def __init__(self):
+    def __init__(self, client: genai.Client):
+        self.client = client
         self.chunks = [] # List of dicts: {"title": str, "content": str, "embedding": list}
-        self.model_name = "models/text-embedding-004"
+        self.model_name = "text-embedding-004"
         self._load_and_chunk()
         
     def _parse_markdown(self, filename, prefix):
@@ -61,20 +62,19 @@ class RAGEngine:
         
         # Cache embeddings
         for chunk in raw_chunks:
-            embedding = genai.embed_content(
+            response = self.client.models.embed_content(
                 model=self.model_name,
-                content=chunk["content"],
-                task_type="retrieval_document"
-            )["embedding"]
-            chunk["embedding"] = embedding
+                contents=chunk["content"]
+            )
+            chunk["embedding"] = response.embeddings[0].values
             self.chunks.append(chunk)
             
     def retrieve(self, query, top_k=2):
-        query_embedding = genai.embed_content(
+        query_response = self.client.models.embed_content(
             model=self.model_name,
-            content=query,
-            task_type="retrieval_query"
-        )["embedding"]
+            contents=query
+        )
+        query_embedding = query_response.embeddings[0].values
         
         # Calculate similarity
         scored_chunks = []
@@ -102,18 +102,15 @@ def main():
     print("🌲 Booting The Blackwood Anomaly Engine...")
     
     # 1. Initialize RAG Engine
-    rag_engine = RAGEngine()
+    rag_engine = RAGEngine(client)
     
     # 2. Initialize the AI Model
     system_instruction = build_system_instruction()
     # Using the fast model as requested, perfect for text-based real-time responses
-    model = genai.GenerativeModel(
-        model_name="gemini-1.5-flash",
-        system_instruction=system_instruction
+    chat = client.chats.create(
+        model="gemini-2.5-flash",
+        config={"system_instruction": system_instruction}
     )
-    
-    # Start a persistent chat session to remember the conversation history
-    chat = model.start_chat(history=[])
     
     # 3. Initial Game State
     health = 100

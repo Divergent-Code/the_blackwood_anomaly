@@ -24,6 +24,13 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 # Create the tables in the test database
 Base.metadata.create_all(bind=engine)
 
+@pytest.fixture(autouse=True)
+def clear_db():
+    db = TestingSessionLocal()
+    db.query(GameSession).delete()
+    db.commit()
+    db.close()
+
 def override_get_db():
     """Yields the testing database session instead of the production one."""
     try:

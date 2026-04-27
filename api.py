@@ -8,6 +8,11 @@ from sqlalchemy.orm import Session
 from database import get_db, GameSession
 import re
 from rag import rag_engine
+
+# --- Constants & Prompts ---
+SYSTEM_PROMPT_START = "You are a horror Game Master. The game has just started..."
+SYSTEM_PROMPT_ACTION = "You are a horror AI Game Master. Strict rule: YOU MUST end your response exactly with [Health: X% | Stress: Y%]."
+
 app = FastAPI(title="The Blackwood Anomaly API")
 
 # Mount static files for the frontend
@@ -34,7 +39,17 @@ def get_gemini_client(credentials: HTTPAuthorizationCredentials = Security(secur
     try:
         return genai.Client(api_key=user_api_key)
     except Exception as e:
-        raise HTTPException(status_code=401, detail="Invalid API Key format")
+        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+
+def format_chat_history(session_history: list, new_prompt: str) -> list:
+    """Formats the DB JSON history into the structure expected by the Gemini SDK."""
+    formatted_history = []
+    for msg in session_history:
+        text_content = msg.get("content", msg.get("text", ""))
+        formatted_history.append({"role": msg["role"], "parts": [{"text": text_content}]})
+    
+    formatted_history.append({"role": "user", "parts": [{"text": new_prompt}]})
+    return formatted_history
 
 # --- Request/Response Models ---
 class ActionRequest(BaseModel):
@@ -54,14 +69,12 @@ async def create_session(
 ):
     """Initializes a new game using the player's provided API key."""
     
-    system_prompt = "You are a horror Game Master. The game has just started..."
-    
     try:
         # We pass the prompt directly using the user's isolated client
         response = client.models.generate_content(
             model='gemini-2.5-flash',
             contents="Describe the terrifying room the player wakes up in.",
-            config={"system_instruction": system_prompt}
+            config={"system_instruction": SYSTEM_PROMPT_START}
         )
         
         # Save new session to database
@@ -104,8 +117,6 @@ async def submit_action(
     rag_context_str = "\n\n".join([chunk['content'] for chunk in retrieved_chunks])
     
     # 3. Build the prompt
-    system_instruction = "You are a horror AI Game Master. Strict rule: YOU MUST end your response exactly with [Health: X% | Stress: Y%]."
-    
     augmented_prompt = f"""
 === RETRIEVED GAME MECHANICS ===
 {rag_context_str}
@@ -117,18 +128,12 @@ Player: {request.action}
 
     # 4. Call the LLM (Passing the JSON history for memory)
     try:
-        # Convert DB history to the format expected by the new SDK
-        formatted_history = []
-        for msg in session.history:
-            formatted_history.append({"role": msg["role"], "parts": [{"text": msg.get("content", msg.get("text", ""))}]})
-            
-        # Append the new prompt
-        formatted_history.append({"role": "user", "parts": [{"text": augmented_prompt}]})
+        formatted_history = format_chat_history(session.history, augmented_prompt)
         
         response = client.models.generate_content(
             model='gemini-2.5-flash',
             contents=formatted_history,
-            config={"system_instruction": system_instruction}
+            config={"system_instruction": SYSTEM_PROMPT_ACTION}
         )
         ai_text = response.text
         
