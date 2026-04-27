@@ -24,7 +24,7 @@
 ## Evaluation & Testing
 
 * **Reliability:** The system uses automated Pytest suites with FastAPI's `TestClient` and `unittest.mock` to ensure the regex state-extractor (`[Health: X% | Stress: Y%]`) successfully fires and updates the PostgreSQL database on every turn.
-* **Performance:** Deployed as a stateless, dependency-injected endpoint where the RAG embeddings are lazy-loaded via a Singleton pattern to prevent excessive API quota consumption.
+* **Performance:** Deployed as a stateless, dependency-injected endpoint where the RAG embeddings are lazy-loaded via a thread-safe, asynchronous Singleton pattern to prevent excessive API quota consumption and manage concurrent authentication safely.
 
 ## Ethical Considerations & Safety
 

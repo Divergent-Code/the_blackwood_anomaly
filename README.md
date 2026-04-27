@@ -9,7 +9,7 @@ This project demonstrates how to build a stateful, RAG-augmented game engine whe
 * **Framework:** FastAPI
 * **AI Integration:** `google-genai` (BYOK - Bring Your Own Key architecture via Bearer tokens)
 * **State Management:** SQLAlchemy + PostgreSQL (via Docker) with a local SQLite fallback for rapid testing.
-* **Retrieval-Augmented Generation (RAG):** A lazy-loaded Singleton engine that embeds `world_lore.md` and `combat_mechanics.md` dynamically on the first request, saving massive API overhead.
+* **Retrieval-Augmented Generation (RAG):** A thread-safe, asynchronous lazy-loaded Singleton engine that embeds `world_lore.md` and `combat_mechanics.md` dynamically on the first request, saving massive API overhead while handling concurrent players safely.
 
 ## 🚀 Quick Start
 
@@ -51,12 +51,12 @@ This project features an automated, zero-dependency test suite utilizing FastAPI
 To run the tests without consuming real API quota or touching your local database:
 
 ```bash
-pytest tests/test_api.py
+pytest tests/
 ```
 
 ## 📜 Project Phases Completed
 
 * **Phase 1 & 2:** Core Mechanics & Architecture mapped out.
-* **Phase 3:** RAG Singleton implemented using `google-genai`.
-* **Phase 4:** Reliability & Testing achieved via `test_api.py` mocking.
+* **Phase 3:** RAG Singleton implemented asynchronously using `google-genai`.
+* **Phase 4:** Reliability & Testing achieved via the automated test suite.
 * **Phase 5 & 6:** Reflection (`model_card.md`) and finalized documentation deployed!
