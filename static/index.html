@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Blackwood Anomaly</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-clinical: #e8e6e1;
+            --text-primary: #181818;
+            --bg-monitor: #0d0d0d;
+            --text-monitor: #e8e6e1;
+            --accent-blood: #a31d1d;
+            --font-story: 'Cormorant Garamond', serif;
+            --font-data: 'Space Mono', monospace;
+            --space-xs: 0.5rem;
+            --space-sm: 1rem;
+            --space-md: 2rem;
+            --space-lg: 4rem;
+            --space-xl: 8rem;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-clinical);
+            color: var(--text-primary);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            font-family: var(--font-story);
+            font-size: 1.35rem;
+            line-height: 1.6;
+        }
+
+        /* The Monitor (Left Side) */
+        aside {
+            width: 400px;
+            background-color: var(--bg-monitor);
+            color: var(--text-monitor);
+            padding: var(--space-xl) var(--space-md) var(--space-md) var(--space-md);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            font-family: var(--font-data);
+            border-right: 6px solid var(--accent-blood);
+            box-shadow: 10px 0 30px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+
+        .vitals {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-lg);
+        }
+
+        .vital-stat {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .vital-label {
+            font-size: 0.75rem;
+            color: #666;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: var(--space-xs);
+        }
+
+        .vital-value {
+            font-size: 6rem;
+            font-weight: 700;
+            line-height: 0.85;
+            letter-spacing: -0.05em;
+            transition: color 0.3s;
+        }
+
+        .vital-value.critical {
+            color: var(--accent-blood);
+            animation: pulse 1s infinite;
+        }
+
+        .input-area {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper::before {
+            content: ">";
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--accent-blood);
+            font-weight: bold;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid #333;
+            color: var(--text-monitor);
+            font-family: var(--font-data);
+            font-size: 1rem;
+            padding: var(--space-sm) 0 var(--space-sm) var(--space-md);
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            border-bottom-color: var(--accent-blood);
+        }
+
+        /* The Clinical Dossier (Right Side) */
+        main {
+            flex: 1;
+            padding: var(--space-xl) 10vw;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+            scroll-behavior: smooth;
+        }
+
+        .dossier-header {
+            border-bottom: 3px solid var(--text-primary);
+            padding-bottom: var(--space-sm);
+            margin-bottom: var(--space-md);
+            font-family: var(--font-data);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .narrative-block {
+            max-width: 60ch;
+            animation: inkFade 1.5s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        .narrative-block.player-action {
+            font-family: var(--font-data);
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            margin-top: var(--space-md);
+            text-transform: uppercase;
+            position: relative;
+            padding-left: var(--space-md);
+        }
+        
+        .narrative-block.player-action::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background-color: var(--accent-blood);
+        }
+
+        /* Modals and UI States */
+        .api-key-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: var(--bg-monitor);
+            color: var(--text-monitor);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-data);
+        }
+
+        .api-key-modal.hidden {
+            display: none;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .modal-content {
+            width: 450px;
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+            border: 1px solid #333;
+            padding: var(--space-xl) var(--space-lg);
+            position: relative;
+        }
+
+        .modal-content::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background-color: var(--accent-blood);
+        }
+
+        .modal-content h1 {
+            color: var(--text-monitor);
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+        }
+
+        button {
+            background-color: var(--text-monitor);
+            color: var(--bg-monitor);
+            border: none;
+            padding: var(--space-sm) var(--space-md);
+            font-family: var(--font-data);
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: background-color 0.2s, color 0.2s;
+            margin-top: var(--space-sm);
+        }
+
+        button:hover {
+            background-color: var(--accent-blood);
+            color: var(--text-monitor);
+        }
+
+        /* Animations */
+        @keyframes inkFade {
+            0% { opacity: 0; transform: translateY(10px) filter(blur(4px)); }
+            100% { opacity: 1; transform: translateY(0) filter(blur(0)); }
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* Loading Indicator */
+        .typing-indicator {
+            font-family: var(--font-data);
+            font-size: 0.8rem;
+            color: var(--accent-blood);
+            height: 20px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .typing-indicator.active {
+            opacity: 1;
+            animation: pulse 1s infinite;
+        }
+
+        /* Markdown styling */
+        strong {
+            font-weight: 600;
+            color: var(--accent-blood);
+        }
+        em {
+            font-style: italic;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="api-key-modal" id="apiModal">
+        <div class="modal-content">
+            <h1>Sanatorium Intake</h1>
+            <p style="font-size: 0.85rem; color: #888; line-height: 1.5;">Provide authorized credential (API Key) to initialize patient observation.</p>
+            <input type="text" id="apiKeyInput" placeholder="Enter Gemini API Key..." />
+            <button id="startBtn">Initialize Observer</button>
+        </div>
+    </div>
+
+    <aside>
+        <div>
+            <div class="vitals">
+                <div class="vital-stat">
+                    <span class="vital-label">BPM / Health</span>
+                    <span class="vital-value" id="healthDisplay">--</span>
+                </div>
+                <div class="vital-stat">
+                    <span class="vital-label">Cortisol / Stress</span>
+                    <span class="vital-value" id="stressDisplay">--</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <div class="typing-indicator" id="typingIndicator">PROCESSING OBSERVATION...</div>
+            <form id="actionForm" class="input-wrapper">
+                <input type="text" id="actionInput" placeholder="Specify subject action..." autocomplete="off" disabled>
+            </form>
+            <span style="font-size: 0.65rem; color: #555; margin-top: 8px;">SUBJECT IDENTIFIER: <span id="sessionDisplay">PENDING</span></span>
+        </div>
+    </aside>
+
+    <main id="dossier">
+        <div class="dossier-header">
+            <span>Observation Log - Area 4</span>
+            <span>Date: [REDACTED]</span>
+        </div>
+        <div id="narrativeContainer">
+            <!-- Narrative content injected here -->
+        </div>
+    </main>
+
+    <script>
+        const DOM = {
+            apiModal: document.getElementById('apiModal'),
+            apiKeyInput: document.getElementById('apiKeyInput'),
+            startBtn: document.getElementById('startBtn'),
+            healthDisplay: document.getElementById('healthDisplay'),
+            stressDisplay: document.getElementById('stressDisplay'),
+            actionForm: document.getElementById('actionForm'),
+            actionInput: document.getElementById('actionInput'),
+            narrativeContainer: document.getElementById('narrativeContainer'),
+            sessionDisplay: document.getElementById('sessionDisplay'),
+            typingIndicator: document.getElementById('typingIndicator'),
+            dossier: document.getElementById('dossier')
+        };
+
+        let state = {
+            apiKey: '',
+            sessionId: null,
+            health: 100,
+            stress: 0
+        };
+
+        DOM.startBtn.addEventListener('click', async () => {
+            const key = DOM.apiKeyInput.value.trim();
+            if (!key) return;
+            state.apiKey = key;
+            DOM.apiModal.classList.add('hidden');
+            await initSession();
+        });
+
+        DOM.actionForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const actionText = DOM.actionInput.value.trim();
+            if (!actionText || !state.sessionId) return;
+
+            appendNarrative(actionText, true);
+            DOM.actionInput.value = '';
+            DOM.actionInput.disabled = true;
+            DOM.typingIndicator.classList.add('active');
+
+            try {
+                const response = await fetch(`/api/v1/sessions/${state.sessionId}/actions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${state.apiKey}`
+                    },
+                    body: JSON.stringify({ action: actionText })
+                });
+
+                if (!response.ok) throw new Error('Action failed');
+
+                const data = await response.json();
+                updateState(data);
+                appendNarrative(data.narrative);
+
+            } catch (err) {
+                console.error(err);
+                appendNarrative("SYSTEM ERROR: UNABLE TO PROCESS SUBJECT ACTION.");
+            } finally {
+                DOM.actionInput.disabled = false;
+                DOM.typingIndicator.classList.remove('active');
+                DOM.actionInput.focus();
+            }
+        });
+
+        async function initSession() {
+            DOM.typingIndicator.classList.add('active');
+            try {
+                const response = await fetch('/api/v1/sessions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${state.apiKey}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to start session. Check API Key.');
+                }
+
+                const data = await response.json();
+                state.sessionId = data.session_id;
+                DOM.sessionDisplay.textContent = state.sessionId.substring(0, 8);
+                
+                updateState(data);
+                appendNarrative(data.narrative);
+                DOM.actionInput.disabled = false;
+                DOM.actionInput.focus();
+
+            } catch (err) {
+                alert(err.message);
+                DOM.apiModal.classList.remove('hidden');
+            } finally {
+                DOM.typingIndicator.classList.remove('active');
+            }
+        }
+
+        function updateState(data) {
+            state.health = data.health;
+            state.stress = data.stress;
+
+            DOM.healthDisplay.textContent = state.health;
+            DOM.stressDisplay.textContent = state.stress;
+
+            if (state.health < 40) DOM.healthDisplay.classList.add('critical');
+            else DOM.healthDisplay.classList.remove('critical');
+
+            if (state.stress > 70) DOM.stressDisplay.classList.add('critical');
+            else DOM.stressDisplay.classList.remove('critical');
+
+            if (state.health <= 0) {
+                DOM.actionInput.disabled = true;
+                DOM.actionInput.placeholder = "SUBJECT DECEASED.";
+            }
+        }
+
+        function appendNarrative(text, isAction = false) {
+            const block = document.createElement('div');
+            block.className = `narrative-block ${isAction ? 'player-action' : ''}`;
+            
+            let formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            formattedText = formattedText.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            formattedText = formattedText.replace(/\[Health: \d+% \| Stress: \d+%\]/g, '');
+            
+            if (!isAction) {
+                formattedText = formattedText.replace(/\n/g, '<br>');
+            }
+
+            block.innerHTML = isAction ? `ACTION: ${formattedText}` : formattedText;
+            DOM.narrativeContainer.appendChild(block);
+            
+            setTimeout(() => {
+                DOM.dossier.scrollTop = DOM.dossier.scrollHeight;
+            }, 50);
+        }
+    </script>
+</body>
+</html>

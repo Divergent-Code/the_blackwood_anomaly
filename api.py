@@ -1,5 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from google import genai # Using the modern GenAI client for isolated requests
 from sqlalchemy.orm import Session
@@ -7,6 +9,14 @@ from database import get_db, GameSession
 import re
 from rag import rag_engine
 app = FastAPI(title="The Blackwood Anomaly API")
+
+# Mount static files for the frontend
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.get("/")
+async def serve_frontend():
+    """Serves the frontend application."""
+    return FileResponse("static/index.html")
 
 # Security schema to extract the Bearer token (The User's API Key)
 security = HTTPBearer()
