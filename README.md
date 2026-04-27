@@ -37,11 +37,12 @@ uvicorn api:app --reload
 
 ### 4. Play the Game
 
-Navigate to [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) to access the interactive Swagger UI.
+Navigate to [http://127.0.0.1:8000/](http://127.0.0.1:8000/) to access the **Medical Brutalism** web interface.
 
-1. Click **Authorize** and input your Google AI API key.
-2. Use the `POST /api/v1/sessions` endpoint to start a new game and get your `session_id`.
-3. Use the `POST /api/v1/sessions/{session_id}/actions` endpoint to submit your actions and try to survive!
+1. Enter your Google Gemini API key into the authorization modal to initialize the session.
+2. Observe your vitals and submit your actions to the dossier.
+
+*(Alternatively, navigate to [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) to access the interactive Swagger UI for direct API interaction).*
 
 ## 🧪 Testing
 
