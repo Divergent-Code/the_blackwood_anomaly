@@ -4,6 +4,8 @@ from pydantic import BaseModel
 from google import genai # Using the modern GenAI client for isolated requests
 from sqlalchemy.orm import Session
 from database import get_db, GameSession
+import re
+from rag import rag_engine
 app = FastAPI(title="The Blackwood Anomaly API")
 
 # Security schema to extract the Bearer token (The User's API Key)
@@ -78,22 +80,69 @@ async def submit_action(
     client: genai.Client = Depends(get_gemini_client),
     db: Session = Depends(get_db)
 ):
-    """Processes a player's action using their API key and updates the database."""
+    """Processes a player's action, utilizing RAG and saving state to the DB."""
     
-    # 1. Fetch current health/stress from database using session_id
+    # 1. Fetch Session
     session = db.query(GameSession).filter(GameSession.id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-        
-    # TODO: 2. Run RAG Retrieval
-    # TODO: 3. Call AI with the client.models.generate_content() using session.history
 
-    # TODO: 4. Extract new stats via Regex
-    # TODO: 5. Update PostgreSQL
+    # 2. Formulate state-aware query and fetch RAG Context
+    retrieval_query = f"Player State: {session.health}% Health, {session.stress}% Stress. Action: {request.action}"
+    retrieved_chunks = rag_engine.retrieve(client, retrieval_query, top_k=2)
     
-    return GameResponse(
-        session_id=session_id,
-        health=80, # Mocked for now
-        stress=15, # Mocked for now
-        narrative=f"You tried to '{request.action}'. It didn't go well."
-    )
+    rag_context_str = "\n\n".join([chunk['content'] for chunk in retrieved_chunks])
+    
+    # 3. Build the prompt
+    system_instruction = "You are a horror AI Game Master. Strict rule: YOU MUST end your response exactly with [Health: X% | Stress: Y%]."
+    
+    augmented_prompt = f"""
+=== RETRIEVED GAME MECHANICS ===
+{rag_context_str}
+
+=== PLAYER ACTION ===
+(Current State - Health: {session.health}%, Stress: {session.stress}%)
+Player: {request.action}
+"""
+
+    # 4. Call the LLM (Passing the JSON history for memory)
+    try:
+        # Convert DB history to the format expected by the new SDK
+        formatted_history = []
+        for msg in session.history:
+            formatted_history.append({"role": msg["role"], "parts": [{"text": msg.get("content", msg.get("text", ""))}]})
+            
+        # Append the new prompt
+        formatted_history.append({"role": "user", "parts": [{"text": augmented_prompt}]})
+        
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=formatted_history,
+            config={"system_instruction": system_instruction}
+        )
+        ai_text = response.text
+        
+        # 5. Extract State via Regex
+        match = re.search(r"\[Health: (\d+)% \| Stress: (\d+)%\]", ai_text)
+        if match:
+            session.health = int(match.group(1))
+            session.stress = int(match.group(2))
+            
+        # 6. Update DB History & Commit
+        new_history = list(session.history)
+        new_history.append({"role": "user", "content": request.action}) # Store clean action for history
+        new_history.append({"role": "model", "content": ai_text})
+        session.history = new_history
+        
+        db.commit()
+        db.refresh(session)
+        
+        return GameResponse(
+            session_id=session.id,
+            health=session.health,
+            stress=session.stress,
+            narrative=ai_text
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Engine Error: {str(e)}")
