@@ -28,6 +28,6 @@ Reliability Testing: Automated pytest scripts to verify input validation and rul
 
 [x] Phase 4: Reliability & Testing (test_game.py automated harness)
 
-[ ] Phase 5: Reflection & Ethics (model_card.md drafted)
+[x] Phase 5: Reflection & Ethics (model_card.md drafted)
 
-[ ] Phase 6: Final Polish & Demo (Final README updates, Loom walkthrough)
+[x] Phase 6: Final Polish & Demo (Final README updates, Loom walkthrough)

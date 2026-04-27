@@ -1,82 +1,61 @@
-# 🎮 Game Glitch Investigator: The Impossible Guesser
+# 🌲 The Blackwood Anomaly
 
-## 🚨 The Situation
+An AI-powered, API-driven survival horror text adventure powered by FastAPI, PostgreSQL, and Google's Gemini 2.5 Flash model.
 
-An AI pair programmer generated a simple "Number Guessing Game" using Streamlit. Unfortunately, it handed over a codebase full of glitches: the game was unplayable, the hints actively lied to the player, and the difficulty scaling was completely backwards.
+This project demonstrates how to build a stateful, RAG-augmented game engine where players interact with an AI Game Master that strictly adheres to retrieved game mechanics and lore.
 
-My mission was to step in as the Game Glitch Investigator to diagnose, explain, and responsibly repair the AI-generated code.
+## 🏛️ Architecture
 
-## 🛠️ Setup & Execution
+* **Framework:** FastAPI
+* **AI Integration:** `google-genai` (BYOK - Bring Your Own Key architecture via Bearer tokens)
+* **State Management:** SQLAlchemy + PostgreSQL (via Docker) with a local SQLite fallback for rapid testing.
+* **Retrieval-Augmented Generation (RAG):** A lazy-loaded Singleton engine that embeds `world_lore.md` and `combat_mechanics.md` dynamically on the first request, saving massive API overhead.
 
-To run this game locally:
+## 🚀 Quick Start
 
-1. Install the required dependencies: `pip install -r requirements.txt`
-2. Launch the Streamlit app: `python -m streamlit run app.py`
-3. Run the automated test suite: `pytest` or `python -m pytest tests/test_game_logic.py`
+### 1. Install Dependencies
 
----
+```bash
+pip install -r requirements.txt
+```
 
-## 📝 Documenting the Experience
+### 2. Run the Database (Optional but Recommended)
 
-### The Game's Purpose
+To use actual PostgreSQL with vector capabilities, spin up the provided Docker container:
 
-This project is an interactive, Streamlit-based web application where a player attempts to guess a randomly generated secret number within a limited number of tries. Players can choose from different difficulty levels (Easy, Normal, Hard, and "I'm Feeling Lucky") and use visual hint systems to help them narrow down the correct answer.
+```bash
+docker-compose up -d
+```
 
-### Bugs Discovered
+*(If you skip this step, the app will automatically fall back to creating a local `blackwood.db` SQLite file).*
 
-During the initial "Glitch Hunt", I found several critical logic and state flaws:
+### 3. Boot the Server
 
-- **The Lying Hints:** The directional hints were inverted (e.g., telling players to "📈 Go HIGHER!" when their guess was already too high).
-- **Broken Difficulty:** The "Hard" difficulty actually gave a smaller range of numbers (1–50) than the "Normal" mode (1–100), making it the easiest mode.
-- **Silent Crashes:** Entering decimal numbers or empty strings caused silent truncation or unhandled exceptions.
-- **Double Penalties:** The scoring system unfairly double-penalized players by deducting points for wrong guesses while also reducing the potential win payout.
-- **State Glitches:** A bizarre type-juggling bug caused the secret number to turn into a string on every even attempt, breaking the comparison logic.
+```bash
+uvicorn api:app --reload
+```
 
-### Fixes Applied
+### 4. Play the Game
 
-To repair the application, I refactored the core game logic out of the UI layer (`app.py`) and into a dedicated `logic_utils.py` file. I corrected the inverted hint directions, fixed the scoring formula so points only scale positively upon a win, implemented robust input validation, and stabilized the Streamlit `st.session_state` so the secret number and attempt counters persist correctly across reruns without consuming attempts on invalid inputs.
+Navigate to [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) to access the interactive Swagger UI.
 
----
+1. Click **Authorize** and input your Google AI API key.
+2. Use the `POST /api/v1/sessions` endpoint to start a new game and get your `session_id`.
+3. Use the `POST /api/v1/sessions/{session_id}/actions` endpoint to submit your actions and try to survive!
 
-## 🚀 Completed Challenges
+## 🧪 Testing
 
-I went beyond the base requirements to deepen my technical reasoning and build out real-world engineering features:
+This project features an automated, zero-dependency test suite utilizing FastAPI's `TestClient` and `unittest.mock`.
 
-### 🧪 Challenge 1: Advanced Edge-Case Testing
+To run the tests without consuming real API quota or touching your local database:
 
-Using AI generation, I created a robust `pytest` suite in `test_game_logic.py` that targets specific edge-case inputs. The game is now verified to handle negative numbers, decimals, and extremely large numbers gracefully without crashing.
+```bash
+pytest tests/test_api.py
+```
 
-### 🏆 Challenge 2: Feature Expansion via Agent Mode
+## 📜 Project Phases Completed
 
-I collaborated with the AI Agent to plan and implement a persistent **High Score leaderboard**.
-
-- Scores are saved automatically to a `high_scores.json` file.
-- The sidebar displays a live Top 5 leaderboard for the currently selected difficulty.
-- The agent designed the architecture to keep the file parsing inside `logic_utils.py` to maintain independent testability.
-
-### 📚 Challenge 3: Professional Documentation and Linting
-
-I used Claude Code to add professional-grade, Google-style docstrings to every function in `logic_utils.py`. I also reviewed the code for PEP 8 style compliance, resolving formatting issues, standardizing dictionaries, and ensuring strong type hints.
-
-### 🌡️ Challenge 4: Enhanced Game UI
-
-I added a structured and user-friendly output to the game to elevate the player experience:
-
-- **Dynamic Hot/Cold Emojis:** Players can toggle a temperature-based hint system that uses color-coded Streamlit alerts (e.g., 🔥 Boiling, ❄️ Cold) based on proximity to the secret.
-- **Game Session Summary Table:** At the end of a session, a sleek `st.dataframe` renders a timeline of all guesses, temperatures, and hints for that round.
-
----
-
-## 📸 Demo
-
-**1. Passing Automated Tests**
-
-> ![Pytest results showing all testings passing](Challenge_1_Advanced_Edge_Casing.png)
-
-**2. The New Player Experience**
-
-> ![Game settings menu showcasing difficulty settings, scoreboard and hint settings including Hot/Cold mode](Challenge_4_Enhanced_Game_UI_1.png)
-
-> ![Game session showing Hot/Cold hints in action](Challenge_4_Enhanced_Game_UI_2.png)
-
-> ![Game session summary table showcasing all guesses, temperatures, and hints for the round](Challenge_4_Enhanced_Game_UI_3.png)
+* **Phase 1 & 2:** Core Mechanics & Architecture mapped out.
+* **Phase 3:** RAG Singleton implemented using `google-genai`.
+* **Phase 4:** Reliability & Testing achieved via `test_api.py` mocking.
+* **Phase 5 & 6:** Reflection (`model_card.md`) and finalized documentation deployed!
