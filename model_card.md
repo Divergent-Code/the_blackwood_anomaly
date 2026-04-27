@@ -2,8 +2,8 @@
 
 ## Model Details
 
-* **Developer:** The Blackwood Asylum project team.
-* **Model Version:** v1.0
+* **Developer:** The Blackwood Anomaly project team.
+* **Model Version:** V1.0
 * **Base Model:** Gemini 2.5 Flash
 * **Task:** Text-based survival horror Game Master orchestration and state extraction.
 * **Architecture:** Large Language Model (LLM) utilizing a stateless Retrieval-Augmented Generation (RAG) pipeline via `google-genai` and FastAPI.
