@@ -129,7 +129,7 @@ async def create_session(
         response = await llm.generate_content(
             model='gemini-2.5-flash',
             system_instruction=system_instruction,
-            messages=[{"role": "user", "content": "Describe the terrifying room the player wakes up in."}]
+            messages=[{"role": "user", "content": "Start the game. Describe the exact moment Subject 814 wakes up in the Blackwood Institute. Establish the sensory details of the room, the surgical staples on their neck, and give them their first prompt to action. Be brief and punchy."}]
         )
         
         # Save new session to database
