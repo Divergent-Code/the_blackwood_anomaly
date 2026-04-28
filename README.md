@@ -7,8 +7,8 @@ This project demonstrates how to build a stateful, RAG-augmented game engine whe
 ## 🏛️ Architecture
 
 * **Framework:** FastAPI
-* **AI Integration:** Multi-LLM provider abstraction (BYOK - Bring Your Own Key architecture via Bearer tokens for Gemini, OpenAI, or OpenRouter). Features Agentic Tool Calling (e.g. `roll_d20`).
-* **State Management:** SQLAlchemy + PostgreSQL (via Docker) with a local SQLite fallback for rapid testing.
+* **AI Integration:** Multi-LLM provider abstraction (BYOK - Bring Your Own Key architecture via Bearer tokens for Gemini, OpenAI, or OpenRouter). Features a robust **Agentic Tool Calling** loop (e.g. `roll_d20`, `apply_vitals`, `add_item`) for deterministic game state mutation.
+* **State Management:** SQLAlchemy + PostgreSQL (via Docker) with a local SQLite fallback. Features extended game state tracking (`inventory`, `current_location`, `escape_stage`) and zero-downtime schema migrations.
 * **Retrieval-Augmented Generation (RAG):** A thread-safe, asynchronous lazy-loaded Singleton engine that embeds `world_lore.md` and `combat_mechanics.md` dynamically on the first request, saving massive API overhead while handling concurrent players safely.
 
 ## 🚀 Quick Start

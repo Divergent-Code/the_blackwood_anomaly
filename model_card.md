@@ -11,7 +11,7 @@
 ## Intended Use
 
 * **Primary Use Case:** To dynamically generate atmospheric, engaging, and terrifying horror narratives in response to player text inputs within a controlled, persistent game session.
-* **Secondary Use Case:** To parse player intent and apply strict game mechanics by (1) utilizing Python tools (like `roll_d20`) autonomously and (2) outputting a predictable Regex-parsable state format at the end of each response.
+* **Secondary Use Case:** To parse player intent and apply strict game mechanics by utilizing a suite of Python tools (like `roll_d20`, `apply_vitals`, `add_item`) autonomously to deterministically mutate game state, with Regex parsing reserved as a fallback mechanism.
 * **Out-of-Scope:** This model is strictly bounded to the game's universe and mechanics. It is not intended to provide real-world advice, hold casual conversations, or generate non-horror related creative writing.
 
 ## Training Data & Retrieval Context
@@ -30,7 +30,7 @@
 
 ## Evaluation & Testing
 
-* **Reliability:** The system uses automated Pytest suites with FastAPI's `TestClient` and `unittest.mock` to ensure the regex state-extractor (`[Health: X% | Stress: Y%]`) successfully fires and updates the PostgreSQL database on every turn.
+* **Reliability:** The system uses automated Pytest suites with FastAPI's `TestClient` and `unittest.mock` to ensure the agentic tool-interception loop accurately captures game state mutations and successfully updates the PostgreSQL database on every turn.
 * **Performance:** Deployed as a stateless, dependency-injected endpoint where the RAG embeddings are lazy-loaded via a thread-safe, asynchronous Singleton pattern to prevent excessive API quota consumption and manage concurrent authentication safely.
 
 ## Ethical Considerations & Safety
