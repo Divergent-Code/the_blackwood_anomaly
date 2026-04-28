@@ -177,7 +177,7 @@ class OpenAIProvider(LLMProvider):
         tools: Optional[List[Any]] = None
     ) -> LLMResponse:
         
-        if "gemini" in model:
+        if model == "gemini-2.5-flash":
             model = "gpt-4o-mini"
             
         formatted_messages = [{"role": "system", "content": system_instruction}]
@@ -225,7 +225,7 @@ class OpenAIProvider(LLMProvider):
         tools: Optional[List[Any]] = None
     ) -> LLMResponse:
         
-        if "gemini" in model:
+        if model == "gemini-2.5-flash":
             model = "gpt-4o-mini"
             
         formatted_messages = [{"role": "system", "content": system_instruction}]
@@ -273,7 +273,7 @@ class OpenAIProvider(LLMProvider):
 
     async def embed_content(self, model: str, text: str) -> List[float]:
         # Map generic or google embedding model name to OpenAI
-        if "text-embedding" in model or "gemini" in model:
+        if model == "text-embedding-004" or model == "gemini-2.5-flash":
             model = "text-embedding-3-small"
             
         response = await self.client.embeddings.create(
@@ -294,7 +294,7 @@ class OpenRouterProvider(OpenAIProvider):
         tools: Optional[List[Any]] = None
     ) -> LLMResponse:
         # Default fallback for OpenRouter
-        if "gemini" in model:
+        if model == "gemini-2.5-flash":
             model = "openai/gpt-4o-mini"
         return await super().generate_content(model, system_instruction, messages, tools)
 
@@ -307,12 +307,12 @@ class OpenRouterProvider(OpenAIProvider):
         tool_results: List[Dict[str, Any]],
         tools: Optional[List[Any]] = None
     ) -> LLMResponse:
-        if "gemini" in model:
+        if model == "gemini-2.5-flash":
             model = "openai/gpt-4o-mini"
         return await super().generate_with_tool_result(model, system_instruction, messages, previous_response, tool_results, tools)
 
     async def embed_content(self, model: str, text: str) -> List[float]:
         # Map embedding model to OpenRouter syntax
-        if "text-embedding" in model or "gemini" in model:
+        if model == "text-embedding-004" or model == "gemini-2.5-flash":
             model = "openai/text-embedding-3-small"
         return await super().embed_content(model, text)
