@@ -17,10 +17,12 @@
 ## Training Data & Retrieval Context
 
 * **System Instruction:** Loaded dynamically per request from `data/storyteller_guide.md`. Includes:
-  - Persona and aesthetic constraints ("Medical Brutalism").
-  - **Core Premise block** — hard-coded lore (Subject 814, The Blackwood Institute, The Anomaly, the escape goal) injected on every single LLM call to eliminate context drift and generic outputs.
-  - Narrative loop (Resolve → Advance → Prompt) and the `[Health: X% | Stress: Y%]` output guardrail.
+  * Persona and aesthetic constraints ("Medical Brutalism").
+  * **Core Premise block** — hard-coded lore (Subject 814, The Blackwood Institute, The Anomaly, the escape goal) injected on every single LLM call to eliminate context drift and generic outputs.
+  * Narrative loop (Resolve → Advance → Prompt) and the `[Health: X% | Stress: Y%]` output guardrail.
+  * **Session Modes** — MODE 1 (`"Start the game."`) for cinematic new-game openings; MODE 2 (`"Recap the session."`) for clinical session summaries with vitals tag explicitly suppressed to prevent regex misfire.
 * **Session Opening:** The `POST /api/v1/sessions` call uses a directive prompt specifying the exact scene (wake-up moment), props (staples, gown, concrete room), and mandatory action-prompt ending to guarantee a consistent, grounded first impression for every player.
+* **Session Recap:** The `POST /api/v1/sessions/{id}/recap` call compresses session history into a labelled transcript and triggers MODE 2, returning a 2–3 sentence clinical incident-report summary rendered as a distinct UI block in the frontend.
 * **Retrieval-Augmented Generation (RAG):** The AI has no inherent persistent memory of the game's mechanics. Instead, it relies on strict context injected at runtime from two verified sources:
     1. `world_lore.md`: The atmospheric constraints, setting details, and narrative boundaries.
     2. `combat_mechanics.md`: Hard-coded rules dictating when the player should take damage or accrue stress based on their actions.

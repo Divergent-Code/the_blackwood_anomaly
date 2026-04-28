@@ -37,6 +37,7 @@ The central orchestrator of the game. It handles routing, dependency injection, 
 - **Stateless BYOK:** The server extracts the user's API key from the incoming request and instantiates an isolated `LLMProvider`. Supports Gemini, OpenAI, and OpenRouter via the `X-LLM-Provider` header.
 - **Agentic Loop:** The API handles `function_calls` from the LLM, executing local Python tools (like `roll_d20`), and feeding the results back for a final generated narrative.
 - **Regex State Extraction:** After the LLM generates a narrative response, the API parses the required `[Health: X% | Stress: Y%]` suffix using Regular Expressions.
+- **Session Recap (`POST /recap`):** Compresses prior session history into a labelled transcript and invokes the LLM in MODE 2 (Session Recap) to generate a clinical, atmospheric summary for returning players. Vitals tag is suppressed in this mode to protect the regex extractor.
 
 ### 2. RAG Engine Singleton (`rag.py`)
 
@@ -64,6 +65,7 @@ The static, verified truth that anchors the LLM.
   - **Core Directives** — Show-don't-tell, absolute player agency, and brevity rules.
   - **Game Loop** — Resolve → Advance → Prompt narrative structure.
   - **Output Guardrail** — Enforces the `[Health: X% | Stress: Y%]` regex target on every response.
+  - **Session Modes** — Two keyed behavioral modes: MODE 1 (`"Start the game."`) for cinematic new-game openings and MODE 2 (`"Recap the session."`) for clinical returning-player summaries with vitals tag suppressed.
 
 ## Security & Privacy
 

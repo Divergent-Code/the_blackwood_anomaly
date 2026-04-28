@@ -65,18 +65,32 @@ A FastAPI security dependency. Extracts the Bearer token from the `Authorization
 
 ### `get_storyteller_guide()`
 
-A FastAPI dependency that dynamically loads `data/storyteller_guide.md` as the foundational system prompt on every LLM call. The guide is structured in four sections:
+A FastAPI dependency that dynamically loads `data/storyteller_guide.md` as the foundational system prompt on every LLM call. The guide is structured in five sections:
 
 1. **Persona** — aesthetic and writing voice constraints.
 2. **Core Premise** — the WHO/WHAT/WHERE/WHY lore block grounding all generation in established canon (Subject 814, The Blackwood Institute, The Anomaly).
 3. **Game Loop** — the Resolve → Advance → Prompt narrative structure the LLM must follow on every turn.
 4. **Output Guardrail** — enforces the `[Health: X% | Stress: Y%]` format required for regex state extraction.
+5. **Session Modes** — two explicit behavioral modes keyed to the opening of the user prompt:
+   * **MODE 1 (New Game):** triggered by `"Start the game."` — cinematic scene-setting with vitals tag at 100/0.
+   * **MODE 2 (Session Recap):** triggered by `"Recap the session."` — clinical 2–3 sentence incident-report summary, **vitals tag suppressed**.
 
 Because the file is read per-request (not at boot), narrative tuning changes take effect immediately on the next API call without a server restart.
 
 ### `create_session()` — Opening Prompt
 
 The session-initialization LLM call uses a **directive prompt** rather than a vague creative instruction. It explicitly tells the AI which moment to write (Subject 814's wake-up), which physical props to use (surgical staples, hospital gown, concrete room), and mandates ending on a clear player action prompt. This eliminates generic opening outputs.
+
+### `get_session_recap()` — `POST /api/v1/sessions/{id}/recap`
+
+Generates an atmospheric session summary for returning players. The backend:
+
+1. Loads the full message history from the database.
+2. Compresses it into a labelled transcript with `SUBJECT 814:` and `INSTITUTE LOG:` prefixes.
+3. Sends it to the LLM with the `"Recap the session."` sentinel prefix, triggering MODE 2.
+4. Returns the 2–3 sentence clinical summary as a `RecapResponse`.
+
+The frontend renders this as a visually distinct **INCIDENT REPORT — PRIOR OBSERVATION** block with dashed border styling. If the call fails, it falls back silently to a static `"— Session resumed. Observation log continues. —"` message so play can continue.
 
 ## 4. LLM Providers (`llm_provider.py`)
 
