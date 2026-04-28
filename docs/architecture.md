@@ -58,6 +58,7 @@ The static, verified truth that anchors the LLM.
 
 - `world_lore.md`: Defines the atmospheric boundaries, aesthetic (Medical Brutalism), and narrative constraints.
 - `combat_mechanics.md`: Hard-coded rules that the LLM must follow to deduct health or apply stress based on player actions.
+- `storyteller_guide.md`: The core Game Master persona and system instructions, enforcing narrative structure (Resolve, Advance, Prompt) and the regex state output format.
 
 ## Security & Privacy
 

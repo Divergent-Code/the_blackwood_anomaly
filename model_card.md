@@ -16,6 +16,7 @@
 
 ## Training Data & Retrieval Context
 
+* **System Instruction:** The baseline persona, aesthetic ("Medical Brutalism"), and formatting constraints (the `[Health: X% | Stress: Y%]` requirement) are loaded dynamically on every request from `data/storyteller_guide.md`.
 * **Retrieval-Augmented Generation (RAG):** The AI has no inherent persistent memory of the game's mechanics. Instead, it relies on strict context injected at runtime from two verified sources:
     1. `world_lore.md`: The atmospheric constraints, setting details, and narrative boundaries.
     2. `combat_mechanics.md`: Hard-coded rules dictating when the player should take damage or accrue stress based on their actions.

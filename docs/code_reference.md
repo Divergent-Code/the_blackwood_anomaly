@@ -63,6 +63,10 @@ A FastAPI dependency generator that creates a localized SQLAlchemy `SessionLocal
 
 A FastAPI security dependency. Extracts the Bearer token from the `Authorization` HTTP header and instantiates an isolated `LLMProvider` (`GeminiProvider`, `OpenAIProvider`, or `OpenRouterProvider`) based on the `X-LLM-Provider` header.
 
+### `get_storyteller_guide()`
+
+A FastAPI dependency that dynamically loads `data/storyteller_guide.md` as the foundational system prompt for the LLM. This defines the core Game Master persona, narrative style, and regex state-extraction rules for each session request.
+
 ## 4. LLM Providers (`llm_provider.py`)
 
 Abstracts the underlying LLM SDKs to provide a unified `generate_content` and `generate_with_tool_result` interface, handling message formatting, tool definitions, and tool result passing across different models. Includes `OpenRouterProvider` for automatic endpoint routing and model name translation.
