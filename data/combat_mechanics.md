@@ -52,7 +52,7 @@ If either condition is absent, **do not roll**. Narrate the outcome directly.
 ### Actions That Require a Roll
 
 | Category | Examples | Typical DC |
-|---|---|---|
+| --- | --- | --- |
 | **Combat** | Attacking a rogue surgical arm, grappling a twisted staff member, disarming a trap | 13–18 |
 | **Evasion** | Dodging a swinging blade mount, diving behind cover before a burst fires | 12–16 |
 | **Stealth** | Moving silently past an active threat, staying hidden while it searches | 11–15 |
@@ -75,7 +75,7 @@ Never call `roll_d20` for the following — narrate the result directly:
 ### Difficulty Class (DC) Reference
 
 | DC | Difficulty | Context |
-|---|---|---|
+| --- | --- | --- |
 | 8 | Very Easy | Risky but well within normal human ability |
 | 10 | Easy | Standard challenge, minor pressure |
 | 12 | Moderate | Requires focus; failure is plausible |
@@ -91,4 +91,3 @@ Never call `roll_d20` for the following — narrate the result directly:
 ### Commit Rule
 
 Once a roll is made and a result is returned, the outcome is **final and irrevocable**. The AI must commit fully to the success or failure state. No hedging, no softening, no "you almost succeed." The dice are law.
-

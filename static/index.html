@@ -278,6 +278,137 @@
             font-style: italic;
         }
 
+        /* ── Location / Escape Bar ── */
+        .location-bar {
+            font-family: var(--font-data);
+            font-size: 0.6rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: #555;
+            padding: var(--space-sm) 0;
+            border-top: 1px solid #222;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .location-value {
+            color: #888;
+            font-size: 0.7rem;
+        }
+        .escape-bar-track {
+            width: 100%;
+            height: 3px;
+            background: #222;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 2px;
+        }
+        .escape-bar-fill {
+            height: 100%;
+            background: var(--accent-blood);
+            transition: width 0.6s ease;
+        }
+
+        /* ── Inventory Panel ── */
+        .inventory-panel {
+            font-family: var(--font-data);
+            font-size: 0.65rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            border-top: 1px solid #222;
+            padding-top: var(--space-sm);
+        }
+        .inventory-label {
+            color: #444;
+            margin-bottom: 6px;
+        }
+        .inventory-slots {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .inventory-slot {
+            background: #111;
+            border: 1px solid #2a2a2a;
+            padding: 4px 8px;
+            color: #888;
+            border-radius: 2px;
+            min-height: 22px;
+            font-size: 0.6rem;
+            transition: border-color 0.2s, color 0.2s;
+        }
+        .inventory-slot.occupied {
+            color: #bbb;
+            border-color: #3a3a3a;
+        }
+        .inventory-slot.full {
+            border-color: var(--accent-blood);
+            color: var(--accent-blood);
+        }
+
+        /* ── Turn Counter ── */
+        .turn-counter {
+            font-family: var(--font-data);
+            font-size: 0.55rem;
+            letter-spacing: 0.2em;
+            color: #333;
+            text-transform: uppercase;
+            text-align: right;
+            padding-top: 4px;
+        }
+
+        /* ── Panic Cascade ── */
+        @keyframes panicFlicker {
+            0%,100% { filter: none; }
+            10%      { filter: hue-rotate(20deg) blur(0.4px) brightness(0.95); }
+            20%      { filter: none; }
+            55%      { filter: hue-rotate(-15deg) blur(0.3px); }
+            70%      { filter: none; }
+        }
+        main.panic { animation: panicFlicker 2.8s ease-in-out infinite; }
+
+        /* ── Game Over / Won Modals ── */
+        .terminal-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.96);
+            z-index: 400;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-data);
+        }
+        .terminal-modal.hidden { display: none; }
+        .terminal-modal-box {
+            max-width: 520px;
+            width: 90%;
+            border: 1px solid #333;
+            padding: 2.5rem;
+            text-align: center;
+        }
+        .terminal-modal-box.death { border-color: var(--accent-blood); }
+        .terminal-modal-box.escape { border-color: #4a6741; }
+        .terminal-modal-title {
+            font-size: 0.6rem;
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+            margin-bottom: 1.5rem;
+        }
+        .terminal-modal-box.death .terminal-modal-title { color: var(--accent-blood); }
+        .terminal-modal-box.escape .terminal-modal-title { color: #6a9e66; }
+        .terminal-modal-body {
+            font-size: 0.85rem;
+            line-height: 1.8;
+            color: #777;
+            margin-bottom: 1.5rem;
+        }
+        .terminal-modal-sub {
+            font-size: 0.55rem;
+            letter-spacing: 0.2em;
+            color: #333;
+            text-transform: uppercase;
+        }
+
         /* ── Dice Roll Overlay ── */
         .dice-overlay {
             position: fixed;
@@ -411,6 +542,28 @@
                     <span class="vital-value" id="stressDisplay">--</span>
                 </div>
             </div>
+
+            <!-- Location & Escape Stage -->
+            <div class="location-bar">
+                <span>Zone</span>
+                <span class="location-value" id="locationDisplay">Intake Bay 4</span>
+                <span style="margin-top:4px;">Escape Progress</span>
+                <div class="escape-bar-track">
+                    <div class="escape-bar-fill" id="escapeBarFill" style="width:0%"></div>
+                </div>
+                <span id="escapeStageLabel" style="color:#333;">Stage 0 / 4</span>
+            </div>
+
+            <!-- Inventory -->
+            <div class="inventory-panel">
+                <div class="inventory-label">Inventory (<span id="inventoryCount">0</span>/4)</div>
+                <div class="inventory-slots" id="inventorySlots">
+                    <div class="inventory-slot" id="slot0">—</div>
+                    <div class="inventory-slot" id="slot1">—</div>
+                    <div class="inventory-slot" id="slot2">—</div>
+                    <div class="inventory-slot" id="slot3">—</div>
+                </div>
+            </div>
         </div>
 
         <div class="input-area">
@@ -418,7 +571,11 @@
             <form id="actionForm" class="input-wrapper">
                 <input type="text" id="actionInput" placeholder="Specify subject action..." autocomplete="off" disabled>
             </form>
-            <span style="font-size: 0.65rem; color: #555; margin-top: 8px;">SUBJECT IDENTIFIER: <span id="sessionDisplay">PENDING</span></span>
+            <span style="font-size: 0.65rem; color: #555; margin-top: 8px;">
+                SUBJECT IDENTIFIER: <span id="sessionDisplay">PENDING</span>
+                &nbsp;·&nbsp;
+                TURN <span id="turnDisplay">0</span>
+            </span>
         </div>
     </aside>
 
@@ -443,6 +600,32 @@
             </div>
             <div class="dice-verdict" id="diceVerdict"></div>
             <div class="dice-sub" id="diceSub"></div>
+        </div>
+    </div>
+
+    <!-- Death Modal -->
+    <div class="terminal-modal hidden" id="deathModal">
+        <div class="terminal-modal-box death">
+            <div class="terminal-modal-title">— Simulation Terminated —</div>
+            <div class="terminal-modal-body" id="deathModalBody">
+                Subject 814 vital signs: absent.<br>
+                The Blackwood Institute's automated systems log this as an<br>
+                <em>unrecovered asset event.</em>
+            </div>
+            <div class="terminal-modal-sub">Session archived. Reload to begin a new observation.</div>
+        </div>
+    </div>
+
+    <!-- Escape / Win Modal -->
+    <div class="terminal-modal hidden" id="escapeModal">
+        <div class="terminal-modal-box escape">
+            <div class="terminal-modal-title">— Perimeter Breach Confirmed —</div>
+            <div class="terminal-modal-body">
+                Subject 814 has exited the facility.<br>
+                The Warden system has logged an anomalous event.<br>
+                <em>This was not supposed to happen.</em>
+            </div>
+            <div class="terminal-modal-sub">Observation complete. Reload to begin a new session.</div>
         </div>
     </div>
 
@@ -475,7 +658,13 @@
             apiKey: '',
             sessionId: null,
             health: 100,
-            stress: 0
+            stress: 0,
+            inventory: [],
+            currentLocation: 'Intake Bay 4',
+            escapeStage: 0,
+            turnCount: 0,
+            gameOver: false,
+            gameWon: false
         };
 
         // --- On page load: check localStorage for a saved session ---
@@ -599,14 +788,8 @@
 
                 const data = await stateResponse.json();
                 state.sessionId = data.session_id;
-                state.health = data.health;
-                state.stress = data.stress;
-
                 DOM.sessionDisplay.textContent = state.sessionId.substring(0, 8);
-                DOM.healthDisplay.textContent = state.health;
-                DOM.stressDisplay.textContent = state.stress;
-                if (state.health < 40) DOM.healthDisplay.classList.add('critical');
-                if (state.stress > 70) DOM.stressDisplay.classList.add('critical');
+                updateState(data);
 
                 // 2. Generate an AI recap (requires API key)
                 const recapResponse = await fetch(`/api/v1/sessions/${savedId}/recap`, {
@@ -639,21 +822,73 @@
         }
 
         function updateState(data) {
-            state.health = data.health;
-            state.stress = data.stress;
-
+            // ── Vitals ──
+            state.health = data.health ?? state.health;
+            state.stress = data.stress ?? state.stress;
             DOM.healthDisplay.textContent = state.health;
             DOM.stressDisplay.textContent = state.stress;
-
             if (state.health < 40) DOM.healthDisplay.classList.add('critical');
             else DOM.healthDisplay.classList.remove('critical');
-
             if (state.stress > 70) DOM.stressDisplay.classList.add('critical');
             else DOM.stressDisplay.classList.remove('critical');
 
-            if (state.health <= 0) {
+            // ── Location ──
+            if (data.current_location) {
+                state.currentLocation = data.current_location;
+                document.getElementById('locationDisplay').textContent = data.current_location;
+            }
+
+            // ── Inventory ──
+            if (data.inventory !== undefined) {
+                state.inventory = data.inventory;
+                const slots = state.inventory;
+                const count = slots.length;
+                document.getElementById('inventoryCount').textContent = count;
+                for (let i = 0; i < 4; i++) {
+                    const el = document.getElementById(`slot${i}`);
+                    el.className = 'inventory-slot';
+                    if (i < count) {
+                        el.textContent = slots[i];
+                        el.classList.add(count === 4 ? 'full' : 'occupied');
+                    } else {
+                        el.textContent = '—';
+                    }
+                }
+            }
+
+            // ── Escape Stage ──
+            if (data.escape_stage !== undefined) {
+                state.escapeStage = data.escape_stage;
+                const pct = (data.escape_stage / 4) * 100;
+                document.getElementById('escapeBarFill').style.width = `${pct}%`;
+                document.getElementById('escapeStageLabel').textContent = `Stage ${data.escape_stage} / 4`;
+            }
+
+            // ── Turn Counter ──
+            if (data.turn_count !== undefined) {
+                state.turnCount = data.turn_count;
+                document.getElementById('turnDisplay').textContent = data.turn_count;
+            }
+
+            // ── Panic Cascade ──
+            if (data.panic_cascade) {
+                DOM.dossier.classList.add('panic');
+            } else {
+                DOM.dossier.classList.remove('panic');
+            }
+
+            // ── Terminal States ──
+            if (data.game_over && !state.gameOver) {
+                state.gameOver = true;
                 DOM.actionInput.disabled = true;
-                DOM.actionInput.placeholder = "SUBJECT DECEASED.";
+                DOM.actionInput.placeholder = 'SUBJECT DECEASED.';
+                document.getElementById('deathModal').classList.remove('hidden');
+            }
+            if (data.game_won && !state.gameWon) {
+                state.gameWon = true;
+                DOM.actionInput.disabled = true;
+                DOM.actionInput.placeholder = 'SESSION COMPLETE.';
+                document.getElementById('escapeModal').classList.remove('hidden');
             }
         }
 

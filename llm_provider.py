@@ -147,27 +147,113 @@ class OpenAIProvider(LLMProvider):
     def _convert_tools(self, tools: Optional[List[Any]]) -> Optional[List[Dict[str, Any]]]:
         if not tools:
             return None
-        openai_tools = []
+
+        SCHEMAS: Dict[str, Dict] = {
+            "roll_d20": {
+                "type": "function",
+                "function": {
+                    "name": "roll_d20",
+                    "description": "Rolls a 20-sided die for a risky player action per the Dice Protocol.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "difficulty_class": {
+                                "type": "integer",
+                                "description": "Target DC: 8=Very Easy, 10=Easy, 12=Moderate, 15=Hard, 18=Very Hard, 20=Nearly Impossible.",
+                            }
+                        },
+                        "required": ["difficulty_class"],
+                    },
+                },
+            },
+            "apply_vitals": {
+                "type": "function",
+                "function": {
+                    "name": "apply_vitals",
+                    "description": "Updates Subject 814's health and stress. Call instead of writing [Health: X% | Stress: Y%].",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "health_delta": {"type": "integer", "description": "Health change (-100 to +100). Negative = damage."},
+                            "stress_delta": {"type": "integer", "description": "Stress change (-100 to +100). Positive = more stress."},
+                        },
+                        "required": ["health_delta", "stress_delta"],
+                    },
+                },
+            },
+            "add_item": {
+                "type": "function",
+                "function": {
+                    "name": "add_item",
+                    "description": "Adds an item to Subject 814's inventory (max 4 slots).",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "item_name": {"type": "string", "description": "Descriptive item name."},
+                        },
+                        "required": ["item_name"],
+                    },
+                },
+            },
+            "remove_item": {
+                "type": "function",
+                "function": {
+                    "name": "remove_item",
+                    "description": "Removes an item from Subject 814's inventory.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "item_name": {"type": "string", "description": "Exact item name as in inventory."},
+                        },
+                        "required": ["item_name"],
+                    },
+                },
+            },
+            "move_to_location": {
+                "type": "function",
+                "function": {
+                    "name": "move_to_location",
+                    "description": "Updates current location when player moves to a new zone. Use canonical names from institute_map.md.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "location_name": {"type": "string", "description": "Canonical zone name."},
+                        },
+                        "required": ["location_name"],
+                    },
+                },
+            },
+            "discover_lore": {
+                "type": "function",
+                "function": {
+                    "name": "discover_lore",
+                    "description": "Marks a lore fragment as discovered. Use exact IDs from lore_fragments.md.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "fragment_id": {"type": "string", "description": "Fragment ID (e.g. 'intake_file_814')."},
+                        },
+                        "required": ["fragment_id"],
+                    },
+                },
+            },
+            "advance_escape_stage": {
+                "type": "function",
+                "function": {
+                    "name": "advance_escape_stage",
+                    "description": "Advances escape progress by one stage (0→4). Stage 4 = game won.",
+                    "parameters": {"type": "object", "properties": {}, "required": []},
+                },
+            },
+        }
+
+        result = []
         for t in tools:
-            if hasattr(t, "__name__") and t.__name__ == "roll_d20":
-                openai_tools.append({
-                    "type": "function",
-                    "function": {
-                        "name": "roll_d20",
-                        "description": "Rolls a 20-sided die to determine the success or failure of a risky player action.",
-                        "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "difficulty_class": {
-                                    "type": "integer",
-                                    "description": "The target number to beat. 10=Easy, 15=Hard, 20=Nearly Impossible."
-                                }
-                            },
-                            "required": ["difficulty_class"]
-                        }
-                    }
-                })
-        return openai_tools
+            name = getattr(t, "__name__", None)
+            if name in SCHEMAS:
+                result.append(SCHEMAS[name])
+        return result or None
+
 
     async def generate_content(
         self, 
