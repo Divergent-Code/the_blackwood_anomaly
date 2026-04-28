@@ -278,6 +278,104 @@
             font-style: italic;
         }
 
+        /* ── Dice Roll Overlay ── */
+        .dice-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.88);
+            z-index: 300;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeOverlay 0.15s ease-out forwards;
+        }
+        .dice-overlay.hidden { display: none; }
+
+        @keyframes fadeOverlay {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
+        .dice-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.25rem;
+            font-family: var(--font-data);
+            color: var(--text-monitor);
+        }
+
+        .dice-eyebrow {
+            font-size: 0.6rem;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: #444;
+        }
+
+        /* Hexagonal d20 face via clip-path */
+        .dice-face {
+            width: 160px;
+            height: 160px;
+            clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+            background: #111;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            outline: 3px solid transparent;
+            transition: outline-color 0.3s;
+        }
+
+        /* Glow ring — separate element so clip-path doesn't eat it */
+        .dice-face-wrap {
+            position: relative;
+            filter: drop-shadow(0 0 0px #a31d1d);
+            transition: filter 0.4s;
+        }
+        .dice-face-wrap.settled-success { filter: drop-shadow(0 0 18px #e8e6e1); }
+        .dice-face-wrap.settled-failure  { filter: drop-shadow(0 0 18px #a31d1d); }
+        .dice-face-wrap.settled-critical { filter: drop-shadow(0 0 28px #ff4444); }
+
+        #diceNumber {
+            font-size: 5rem;
+            font-weight: 700;
+            line-height: 1;
+            color: var(--text-monitor);
+            transition: color 0.25s;
+            user-select: none;
+        }
+        #diceNumber.success  { color: #e8e6e1; }
+        #diceNumber.failure  { color: var(--accent-blood); }
+        #diceNumber.critical { color: #ff4444; }
+
+        .dice-verdict {
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            min-height: 1.6rem;
+            transition: color 0.25s;
+        }
+        .dice-verdict.success  { color: #e8e6e1; }
+        .dice-verdict.failure  { color: var(--accent-blood); }
+        .dice-verdict.critical { color: #ff4444; }
+
+        .dice-sub {
+            font-size: 0.65rem;
+            color: #444;
+            letter-spacing: 0.15em;
+        }
+
+        /* Rolling shake */
+        @keyframes diceShake {
+            0%,100% { transform: translate(0,0) rotate(0deg); }
+            20%      { transform: translate(-4px, 2px) rotate(-3deg); }
+            40%      { transform: translate(4px,-2px) rotate(3deg); }
+            60%      { transform: translate(-2px, 3px) rotate(-1deg); }
+            80%      { transform: translate(3px,-1px) rotate(2deg); }
+        }
+        .dice-face-wrap.rolling { animation: diceShake 0.09s linear infinite; }
+
     </style>
 </head>
 <body>
@@ -334,6 +432,20 @@
         </div>
     </main>
 
+    <!-- Dice Roll Overlay -->
+    <div class="dice-overlay hidden" id="diceOverlay">
+        <div class="dice-panel">
+            <div class="dice-eyebrow">Dice Protocol — D20</div>
+            <div class="dice-face-wrap" id="diceFaceWrap">
+                <div class="dice-face">
+                    <span id="diceNumber">—</span>
+                </div>
+            </div>
+            <div class="dice-verdict" id="diceVerdict"></div>
+            <div class="dice-sub" id="diceSub"></div>
+        </div>
+    </div>
+
     <script>
         const DOM = {
             apiModal: document.getElementById('apiModal'),
@@ -350,7 +462,12 @@
             narrativeContainer: document.getElementById('narrativeContainer'),
             sessionDisplay: document.getElementById('sessionDisplay'),
             typingIndicator: document.getElementById('typingIndicator'),
-            dossier: document.getElementById('dossier')
+            dossier: document.getElementById('dossier'),
+            diceOverlay: document.getElementById('diceOverlay'),
+            diceFaceWrap: document.getElementById('diceFaceWrap'),
+            diceNumber: document.getElementById('diceNumber'),
+            diceVerdict: document.getElementById('diceVerdict'),
+            diceSub: document.getElementById('diceSub')
         };
 
         let state = {
@@ -419,6 +536,11 @@
 
                 const data = await response.json();
                 updateState(data);
+
+                // Show dice animation before revealing the AI's narrative
+                const diceAction = data.agent_actions?.find(a => a.includes('Roll:'));
+                if (diceAction) await showDiceRoll(diceAction);
+
                 appendNarrative(data.narrative);
 
             } catch (err) {
@@ -533,6 +655,69 @@
                 DOM.actionInput.disabled = true;
                 DOM.actionInput.placeholder = "SUBJECT DECEASED.";
             }
+        }
+
+        // ── Dice Roll Animation ──────────────────────────────────────────────
+        function showDiceRoll(agentActionStr) {
+            return new Promise(resolve => {
+                // Parse: "Roll: 12 vs DC 15. Success: False"
+                const match = agentActionStr.match(/Roll: (\d+) vs DC (\d+)\. Success: (True|False)/i);
+                if (!match) { resolve(); return; }
+
+                const roll    = parseInt(match[1]);
+                const dc      = parseInt(match[2]);
+                const success = match[3].toLowerCase() === 'true';
+                const natural20 = roll === 20;
+
+                // Reset
+                DOM.diceOverlay.classList.remove('hidden');
+                DOM.diceFaceWrap.className = 'dice-face-wrap rolling';
+                DOM.diceNumber.className = '';
+                DOM.diceNumber.textContent = '—';
+                DOM.diceVerdict.className = 'dice-verdict';
+                DOM.diceVerdict.textContent = '';
+                DOM.diceSub.textContent = `TARGET: ${dc}`;
+
+                // Slot-machine cycle (~1.2 s)
+                let cycles = 0;
+                const totalCycles = 22;
+                const interval = setInterval(() => {
+                    DOM.diceNumber.textContent = Math.floor(Math.random() * 20) + 1;
+                    cycles++;
+
+                    if (cycles >= totalCycles) {
+                        clearInterval(interval);
+
+                        // Snap to real result
+                        DOM.diceNumber.textContent = roll;
+                        DOM.diceFaceWrap.classList.remove('rolling');
+
+                        if (natural20) {
+                            DOM.diceNumber.classList.add('critical');
+                            DOM.diceVerdict.classList.add('critical');
+                            DOM.diceVerdict.textContent = 'CRITICAL';
+                            DOM.diceFaceWrap.classList.add('settled-critical');
+                        } else if (success) {
+                            DOM.diceNumber.classList.add('success');
+                            DOM.diceVerdict.classList.add('success');
+                            DOM.diceVerdict.textContent = 'SUCCESS';
+                            DOM.diceFaceWrap.classList.add('settled-success');
+                        } else {
+                            DOM.diceNumber.classList.add('failure');
+                            DOM.diceVerdict.classList.add('failure');
+                            DOM.diceVerdict.textContent = 'FAILURE';
+                            DOM.diceFaceWrap.classList.add('settled-failure');
+                        }
+
+                        // Hold result for 2.2 s then dismiss
+                        setTimeout(() => {
+                            DOM.diceOverlay.classList.add('hidden');
+                            DOM.diceFaceWrap.className = 'dice-face-wrap';
+                            resolve();
+                        }, 2200);
+                    }
+                }, 55);
+            });
         }
 
         function appendNarrative(text, isAction = false, isRecap = false) {
