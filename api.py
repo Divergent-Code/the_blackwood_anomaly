@@ -68,6 +68,43 @@ class GameResponse(BaseModel):
     narrative: str
     agent_actions: list[str] = []
 
+class SessionState(BaseModel):
+    """Lightweight snapshot returned when loading a saved game."""
+    session_id: str
+    health: int
+    stress: int
+    history: list
+
+# --- API Endpoints: Session Management ---
+@app.get("/api/v1/sessions", response_model=list[SessionState])
+async def list_sessions(db: Session = Depends(get_db)):
+    """Returns all persisted sessions (id, health, stress). Does not require an API key."""
+    sessions = db.query(GameSession).all()
+    return [
+        SessionState(
+            session_id=s.id,
+            health=s.health,
+            stress=s.stress,
+            history=s.history or []
+        )
+        for s in sessions
+    ]
+
+@app.get("/api/v1/sessions/{session_id}", response_model=SessionState)
+async def get_session(session_id: str, db: Session = Depends(get_db)):
+    """Loads a saved game session by ID. Returns health, stress, and full history.
+    Does not require an API key — the client uses this to resume state on page load.
+    """
+    session = db.query(GameSession).filter(GameSession.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return SessionState(
+        session_id=session.id,
+        health=session.health,
+        stress=session.stress,
+        history=session.history or []
+    )
+
 # --- Tool Definitions ---
 def roll_d20(difficulty_class: int) -> str:
     """Rolls a 20-sided die to determine the success or failure of a risky player action.

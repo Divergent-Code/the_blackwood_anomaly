@@ -292,7 +292,12 @@
                 <option value="openrouter" style="color: black;">OpenRouter</option>
             </select>
             <input type="text" id="apiKeyInput" placeholder="Enter API Key..." />
-            <button id="startBtn">Initialize Observer</button>
+            <button id="startBtn">Initialize New Session</button>
+            <div id="resumeSection" style="display: none; margin-top: var(--space-sm); border-top: 1px solid #333; padding-top: var(--space-md);">
+                <p style="font-size: 0.75rem; color: #666; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: var(--space-sm);">Previous session detected</p>
+                <p id="resumeSessionLabel" style="font-size: 0.85rem; color: #aaa; margin-bottom: var(--space-sm);"></p>
+                <button id="resumeBtn" style="background-color: transparent; color: var(--accent-blood); border: 1px solid var(--accent-blood);">Resume Observation</button>
+            </div>
         </div>
     </div>
 
@@ -335,6 +340,9 @@
             providerSelect: document.getElementById('providerSelect'),
             apiKeyInput: document.getElementById('apiKeyInput'),
             startBtn: document.getElementById('startBtn'),
+            resumeSection: document.getElementById('resumeSection'),
+            resumeBtn: document.getElementById('resumeBtn'),
+            resumeSessionLabel: document.getElementById('resumeSessionLabel'),
             healthDisplay: document.getElementById('healthDisplay'),
             stressDisplay: document.getElementById('stressDisplay'),
             actionForm: document.getElementById('actionForm'),
@@ -353,13 +361,37 @@
             stress: 0
         };
 
+        // --- On page load: check localStorage for a saved session ---
+        (function checkSavedSession() {
+            const savedId = localStorage.getItem('blackwood_session_id');
+            const savedProvider = localStorage.getItem('blackwood_provider');
+            if (savedId) {
+                DOM.resumeSessionLabel.textContent =
+                    `Subject ID: ${savedId.substring(0, 8)}... (${savedProvider || 'gemini'})`;
+                DOM.resumeSection.style.display = 'block';
+                if (savedProvider) DOM.providerSelect.value = savedProvider;
+            }
+        })();
+
         DOM.startBtn.addEventListener('click', async () => {
             const key = DOM.apiKeyInput.value.trim();
             if (!key) return;
             state.apiKey = key;
             state.provider = DOM.providerSelect.value;
+            // Clear any old saved session when starting fresh
+            localStorage.removeItem('blackwood_session_id');
+            localStorage.removeItem('blackwood_provider');
             DOM.apiModal.classList.add('hidden');
             await initSession();
+        });
+
+        DOM.resumeBtn.addEventListener('click', async () => {
+            const key = DOM.apiKeyInput.value.trim();
+            if (!key) { alert('Enter your API key to resume.'); return; }
+            state.apiKey = key;
+            state.provider = DOM.providerSelect.value;
+            DOM.apiModal.classList.add('hidden');
+            await resumeSession();
         });
 
         DOM.actionForm.addEventListener('submit', async (e) => {
@@ -416,8 +448,12 @@
 
                 const data = await response.json();
                 state.sessionId = data.session_id;
+
+                // Persist for future page loads
+                localStorage.setItem('blackwood_session_id', state.sessionId);
+                localStorage.setItem('blackwood_provider', state.provider);
+
                 DOM.sessionDisplay.textContent = state.sessionId.substring(0, 8);
-                
                 updateState(data);
                 appendNarrative(data.narrative);
                 DOM.actionInput.disabled = false;
@@ -426,6 +462,43 @@
             } catch (err) {
                 alert(err.message);
                 DOM.apiModal.classList.remove('hidden');
+            } finally {
+                DOM.typingIndicator.classList.remove('active');
+            }
+        }
+
+        async function resumeSession() {
+            const savedId = localStorage.getItem('blackwood_session_id');
+            DOM.typingIndicator.classList.add('active');
+            try {
+                const response = await fetch(`/api/v1/sessions/${savedId}`);
+                if (!response.ok) throw new Error('Saved session not found. It may have been cleared.');
+
+                const data = await response.json();
+                state.sessionId = data.session_id;
+                state.health = data.health;
+                state.stress = data.stress;
+
+                DOM.sessionDisplay.textContent = state.sessionId.substring(0, 8);
+                DOM.healthDisplay.textContent = state.health;
+                DOM.stressDisplay.textContent = state.stress;
+
+                // Replay conversation history into the dossier
+                for (const msg of data.history) {
+                    const isAction = msg.role === 'user';
+                    appendNarrative(msg.content, isAction);
+                }
+
+                DOM.actionInput.disabled = false;
+                DOM.actionInput.focus();
+                appendNarrative('--- Session Resumed ---');
+
+            } catch (err) {
+                localStorage.removeItem('blackwood_session_id');
+                localStorage.removeItem('blackwood_provider');
+                alert(err.message + ' Starting a new session.');
+                DOM.apiModal.classList.remove('hidden');
+                DOM.resumeSection.style.display = 'none';
             } finally {
                 DOM.typingIndicator.classList.remove('active');
             }
