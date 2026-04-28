@@ -35,8 +35,9 @@ flowchart TD
 The central orchestrator of the game. It handles routing, dependency injection, and security.
 
 - **Stateless BYOK:** The server extracts the user's API key from the incoming request and instantiates an isolated `LLMProvider`. Supports Gemini, OpenAI, and OpenRouter via the `X-LLM-Provider` header.
-- **Agentic Loop:** The API handles `function_calls` from the LLM, executing local Python tools (like `roll_d20`), and feeding the results back for a final generated narrative.
-- **Regex State Extraction:** After the LLM generates a narrative response, the API parses the required `[Health: X% | Stress: Y%]` suffix using Regular Expressions.
+- **Agentic Loop:** The API handles `function_calls` from the LLM, executing local Python tools (like `roll_d20`, `apply_vitals`, `add_item`, `move_to_location`), and feeding the results back for a final generated narrative. These tools allow the LLM to directly mutate the persistent game state.
+- **Regex State Fallback:** If the LLM does not call `apply_vitals`, the API falls back to parsing a `[Health: X% | Stress: Y%]` suffix using Regular Expressions.
+- **Derived Game State:** The API computes status flags (`game_over`, `game_won`, `panic_cascade`) automatically based on the updated numerical state.
 - **Session Recap (`POST /recap`):** Compresses prior session history into a labelled transcript and invokes the LLM in MODE 2 (Session Recap) to generate a clinical, atmospheric summary for returning players. Vitals tag is suppressed in this mode to protect the regex extractor.
 
 ### 2. RAG Engine Singleton (`rag.py`)
@@ -52,6 +53,8 @@ Manages the persistence of the game loop across individual REST calls.
 
 - **SQLAlchemy ORM:** Provides an abstraction layer over the database, allowing the system to seamlessly switch between a local SQLite file (for rapid testing) and a production-grade PostgreSQL container.
 - **JSON History:** The player's entire conversation history is persisted in a JSON column, allowing the FastAPI route to rebuild the LLM's conversational memory on every stateless request.
+- **Extended State:** Tracks complex gameplay mechanics, including `inventory` (JSON list, max 4 items), `current_location`, `visited_locations`, `discovered_lore`, and `escape_stage`.
+- **Zero-Downtime Migrations:** The `run_migrations()` utility dynamically adds new columns for extended state to existing SQLite/PostgreSQL databases on startup without dropping data.
 
 ### 4. Knowledge Base (`data/`)
 

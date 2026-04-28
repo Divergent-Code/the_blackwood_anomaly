@@ -50,6 +50,13 @@ Represents a single instance of a player's playthrough.
 * **`health`** (`Integer`): The player's current health (0-100).
 * **`stress`** (`Integer`): The player's current psychological stress (0-100).
 * **`history`** (`JSON`): An array of message dictionaries (e.g., `{"role": "user", "content": "..."}`) maintaining the conversational context for the LLM.
+* **Extended State Columns**:
+  * **`inventory`** (`JSON`): List of items currently held (max 4).
+  * **`current_location`** (`String`): The canonical zone name the player is in.
+  * **`visited_locations`** (`JSON`): List of zones the player has discovered.
+  * **`discovered_lore`** (`JSON`): List of fragment IDs the player has read.
+  * **`escape_stage`** (`Integer`): The current progress of the escape route (0-4).
+  * **`turn_count`** (`Integer`): Total number of actions taken.
 
 ### `get_db()`
 
@@ -70,7 +77,7 @@ A FastAPI dependency that dynamically loads `data/storyteller_guide.md` as the f
 1. **Persona** — aesthetic and writing voice constraints.
 2. **Core Premise** — the WHO/WHAT/WHERE/WHY lore block grounding all generation in established canon (Subject 814, The Blackwood Institute, The Anomaly).
 3. **Game Loop** — the Resolve → Advance → Prompt narrative structure the LLM must follow on every turn.
-4. **Output Guardrail** — enforces the `[Health: X% | Stress: Y%]` format required for regex state extraction.
+4. **Output Guardrail** — instructs the LLM to call `apply_vitals` instead of manually writing out vitals, but enforces the `[Health: X% | Stress: Y%]` format as a fallback.
 5. **Session Modes** — two explicit behavioral modes keyed to the opening of the user prompt:
    * **MODE 1 (New Game):** triggered by `"Start the game."` — cinematic scene-setting with vitals tag at 100/0.
    * **MODE 2 (Session Recap):** triggered by `"Recap the session."` — clinical 2–3 sentence incident-report summary, **vitals tag suppressed**.
@@ -96,6 +103,17 @@ The frontend renders this as a visually distinct **INCIDENT REPORT — PRIOR OBS
 
 Abstracts the underlying LLM SDKs to provide a unified `generate_content` and `generate_with_tool_result` interface, handling message formatting, tool definitions, and tool result passing across different models. Includes `OpenRouterProvider` for automatic endpoint routing and model name translation.
 
-### `roll_d20(difficulty_class: int) -> str`
+### Agentic Tools
 
-A Python tool registered with the Gemini model to act as a "Dice Roller" agent. Instead of arbitrarily deciding player success, the AI can invoke this function with a target difficulty class. The FastAPI backend intercepts the `function_call`, executes the dice roll mathematically, records the action in the `agent_actions` array, and returns the result to Gemini to dictate the final narrative outcome.
+The LLM is registered with a suite of Python functions that allow it to manipulate the deterministic game state:
+
+* **`roll_d20(difficulty_class)`**: Rolls a 20-sided die to determine the success/failure of an action.
+* **`apply_vitals(health_delta, stress_delta)`**: Safely updates Subject 814's health and stress without regex parsing.
+* **`add_item(item_name)` / `remove_item(item_name)`**: Modifies the player's 4-slot inventory.
+* **`move_to_location(location_name)`**: Updates the current canonical zone.
+* **`discover_lore(fragment_id)`**: Marks a specific document as found.
+* **`advance_escape_stage()`**: Increments the primary win-condition track (0-4).
+
+### `_execute_tool_call(tool_call, session)`
+
+The internal dispatch loop in `api.py`. When the LLM requests a tool call, this function intercepts it, updates the live `GameSession` attributes accordingly, records a human-readable log in the `agent_actions` array, and passes the updated state back to the LLM to narrate the outcome.

@@ -8,7 +8,7 @@ Before you begin, ensure you have the following installed:
 
 - **Python 3.10+**
 - **Docker & Docker Compose** (Optional, but highly recommended for the PostgreSQL database)
-- A valid **Google Gemini API Key**. You can obtain one from [Google AI Studio](https://aistudio.google.com/).
+- A valid API Key for **Google Gemini**, **OpenAI**, or **OpenRouter**.
 
 ---
 
@@ -74,7 +74,7 @@ The server will boot up and be accessible at `http://127.0.0.1:8000`.
 
 1. Open your web browser and navigate to [http://127.0.0.1:8000/](http://127.0.0.1:8000/).
 2. You will be greeted by the **Medical Brutalism** web interface.
-3. When prompted, enter your **Google Gemini API Key**. The server uses a Bring-Your-Own-Key (BYOK) architecture, meaning your key is passed directly in the HTTP headers and is never stored on the server.
+3. When prompted, select your preferred **LLM Provider** (Gemini, OpenAI, or OpenRouter) and enter your **API Key**. The server uses a Bring-Your-Own-Key (BYOK) architecture, meaning your key is passed directly in the HTTP headers and is never stored on the server.
 4. Begin typing your actions into the dossier to interact with the AI Game Master.
 
 ---
@@ -89,7 +89,7 @@ To run the tests:
 pytest tests/
 ```
 
-You should see all tests pass, validating the RAG engine initialization, the API endpoints, and the regex state extraction logic.
+You should see all tests pass, validating the RAG engine initialization, the API endpoints, and the agentic state logic.
 
 ---
 
@@ -102,8 +102,8 @@ You should see all tests pass, validating the RAG engine initialization, the API
 
 ### "401 Unauthorized"
 
-**Cause:** You did not provide a Gemini API Key, or the key provided is invalid.
-**Fix:** Double-check your API key in Google AI Studio. Ensure you haven't hit your rate limits.
+**Cause:** You did not provide an API Key, or the key provided is invalid for the selected provider.
+**Fix:** Double-check your API key. Ensure you haven't hit your rate limits.
 
 ### "SQLite thread errors"
 
