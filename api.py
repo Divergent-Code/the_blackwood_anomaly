@@ -105,6 +105,50 @@ async def get_session(session_id: str, db: Session = Depends(get_db)):
         history=session.history or []
     )
 
+class RecapResponse(BaseModel):
+    recap: str
+
+@app.post("/api/v1/sessions/{session_id}/recap", response_model=RecapResponse)
+async def get_session_recap(
+    session_id: str,
+    llm: LLMProvider = Depends(get_llm_provider),
+    db: Session = Depends(get_db),
+    system_instruction: str = Depends(get_storyteller_guide)
+):
+    """Generates an atmospheric summary of a previous play session using the LLM.
+    Requires an API key since it makes a generative call.
+    """
+    session = db.query(GameSession).filter(GameSession.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    history = session.history or []
+    if not history:
+        return RecapResponse(recap="No prior events recorded. Subject 814's file is blank.")
+
+    # Compress history into a readable transcript for the AI
+    transcript_lines = []
+    for msg in history:
+        role = "SUBJECT 814" if msg.get("role") == "user" else "INSTITUTE LOG"
+        transcript_lines.append(f"{role}: {msg.get('content', '')}")
+    transcript = "\n\n".join(transcript_lines)
+
+    recap_prompt = (
+        f"Recap the session.\n\n"
+        f"=== SESSION TRANSCRIPT ===\n{transcript}\n\n"
+        f"Current vitals — Health: {session.health}%, Stress: {session.stress}%."
+    )
+
+    try:
+        response = await llm.generate_content(
+            model='gemini-2.5-flash',
+            system_instruction=system_instruction,
+            messages=[{"role": "user", "content": recap_prompt}]
+        )
+        return RecapResponse(recap=response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Recap generation failed: {str(e)}")
+
 # --- Tool Definitions ---
 def roll_d20(difficulty_class: int) -> str:
     """Rolls a 20-sided die to determine the success or failure of a risky player action.

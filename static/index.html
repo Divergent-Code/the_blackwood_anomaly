@@ -471,10 +471,11 @@
             const savedId = localStorage.getItem('blackwood_session_id');
             DOM.typingIndicator.classList.add('active');
             try {
-                const response = await fetch(`/api/v1/sessions/${savedId}`);
-                if (!response.ok) throw new Error('Saved session not found. It may have been cleared.');
+                // 1. Load the raw session state (no API key needed)
+                const stateResponse = await fetch(`/api/v1/sessions/${savedId}`);
+                if (!stateResponse.ok) throw new Error('Saved session not found. It may have been cleared.');
 
-                const data = await response.json();
+                const data = await stateResponse.json();
                 state.sessionId = data.session_id;
                 state.health = data.health;
                 state.stress = data.stress;
@@ -482,16 +483,27 @@
                 DOM.sessionDisplay.textContent = state.sessionId.substring(0, 8);
                 DOM.healthDisplay.textContent = state.health;
                 DOM.stressDisplay.textContent = state.stress;
+                if (state.health < 40) DOM.healthDisplay.classList.add('critical');
+                if (state.stress > 70) DOM.stressDisplay.classList.add('critical');
 
-                // Replay conversation history into the dossier
-                for (const msg of data.history) {
-                    const isAction = msg.role === 'user';
-                    appendNarrative(msg.content, isAction);
+                // 2. Generate an AI recap (requires API key)
+                const recapResponse = await fetch(`/api/v1/sessions/${savedId}/recap`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${state.apiKey}`,
+                        'X-LLM-Provider': state.provider
+                    }
+                });
+
+                if (recapResponse.ok) {
+                    const recapData = await recapResponse.json();
+                    appendNarrative(recapData.recap, false, true);
+                } else {
+                    appendNarrative('— Session resumed. Observation log continues. —');
                 }
 
                 DOM.actionInput.disabled = false;
                 DOM.actionInput.focus();
-                appendNarrative('--- Session Resumed ---');
 
             } catch (err) {
                 localStorage.removeItem('blackwood_session_id');
@@ -523,19 +535,30 @@
             }
         }
 
-        function appendNarrative(text, isAction = false) {
+        function appendNarrative(text, isAction = false, isRecap = false) {
             const block = document.createElement('div');
-            block.className = `narrative-block ${isAction ? 'player-action' : ''}`;
-            
-            let formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            formattedText = formattedText.replace(/\*(.*?)\*/g, '<em>$1</em>');
-            formattedText = formattedText.replace(/\[Health: \d+% \| Stress: \d+%\]/g, '');
-            
-            if (!isAction) {
-                formattedText = formattedText.replace(/\n/g, '<br>');
+
+            if (isRecap) {
+                block.className = 'narrative-block';
+                block.style.cssText = 'border-left: 2px dashed #444; padding-left: 1rem; opacity: 0.75; font-size: 1.1rem;';
+                const label = document.createElement('p');
+                label.style.cssText = 'font-family: var(--font-data); font-size: 0.65rem; color: #555; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 0.5rem;';
+                label.textContent = 'INCIDENT REPORT — PRIOR OBSERVATION';
+                block.appendChild(label);
+                const content = document.createElement('p');
+                content.innerHTML = text.replace(/\n/g, '<br>');
+                block.appendChild(content);
+            } else {
+                block.className = `narrative-block ${isAction ? 'player-action' : ''}`;
+                let formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                formattedText = formattedText.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                formattedText = formattedText.replace(/\[Health: \d+% \| Stress: \d+%\]/g, '');
+                if (!isAction) {
+                    formattedText = formattedText.replace(/\n/g, '<br>');
+                }
+                block.innerHTML = isAction ? `ACTION: ${formattedText}` : formattedText;
             }
 
-            block.innerHTML = isAction ? `ACTION: ${formattedText}` : formattedText;
             DOM.narrativeContainer.appendChild(block);
             
             setTimeout(() => {
