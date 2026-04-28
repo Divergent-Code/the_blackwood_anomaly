@@ -76,14 +76,35 @@ class GeminiProvider(LLMProvider):
         
         formatted_history = self._format_messages(messages)
         
-        config_dict = {"system_instruction": system_instruction, "max_output_tokens": 1500}
+        config = types.GenerateContentConfig(
+            system_instruction=system_instruction,
+            max_output_tokens=1500,
+            safety_settings=[
+                types.SafetySetting(
+                    category=types.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                    threshold=types.HarmBlockThreshold.BLOCK_NONE,
+                ),
+                types.SafetySetting(
+                    category=types.HarmCategory.HARM_CATEGORY_HARASSMENT,
+                    threshold=types.HarmBlockThreshold.BLOCK_NONE,
+                ),
+                types.SafetySetting(
+                    category=types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                    threshold=types.HarmBlockThreshold.BLOCK_NONE,
+                ),
+                types.SafetySetting(
+                    category=types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                    threshold=types.HarmBlockThreshold.BLOCK_NONE,
+                ),
+            ]
+        )
         if tools:
-            config_dict["tools"] = tools
+            config.tools = tools
 
         response = self.client.models.generate_content(
             model=model,
             contents=formatted_history,
-            config=config_dict
+            config=config
         )
         
         function_calls = []
@@ -124,14 +145,35 @@ class GeminiProvider(LLMProvider):
         formatted_history.append({"role": "user", "parts": parts})
         
         # Generate final response
-        config_dict = {"system_instruction": system_instruction, "max_output_tokens": 1500}
+        config = types.GenerateContentConfig(
+            system_instruction=system_instruction,
+            max_output_tokens=1500,
+            safety_settings=[
+                types.SafetySetting(
+                    category=types.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                    threshold=types.HarmBlockThreshold.BLOCK_NONE,
+                ),
+                types.SafetySetting(
+                    category=types.HarmCategory.HARM_CATEGORY_HARASSMENT,
+                    threshold=types.HarmBlockThreshold.BLOCK_NONE,
+                ),
+                types.SafetySetting(
+                    category=types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                    threshold=types.HarmBlockThreshold.BLOCK_NONE,
+                ),
+                types.SafetySetting(
+                    category=types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                    threshold=types.HarmBlockThreshold.BLOCK_NONE,
+                ),
+            ]
+        )
         if tools:
-            config_dict["tools"] = tools
+            config.tools = tools
 
         response = self.client.models.generate_content(
             model=model,
             contents=formatted_history,
-            config=config_dict
+            config=config
         )
         
         return LLMResponse(
@@ -286,6 +328,7 @@ class OpenAIProvider(LLMProvider):
             "model": model,
             "messages": formatted_messages,
             "max_tokens": 1500,
+            "max_completion_tokens": 1500,
         }
         if openai_tools:
             kwargs["tools"] = openai_tools
@@ -355,6 +398,7 @@ class OpenAIProvider(LLMProvider):
             "model": model,
             "messages": formatted_messages,
             "max_tokens": 1500,
+            "max_completion_tokens": 1500,
         }
         if openai_tools:
             kwargs["tools"] = openai_tools
