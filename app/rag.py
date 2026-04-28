@@ -1,7 +1,7 @@
 import math
 import re
 import asyncio
-from llm_provider import LLMProvider
+from app.llm_provider import LLMProvider
 
 def cosine_similarity(v1, v2):
     """Pure Python dot-product implementation."""

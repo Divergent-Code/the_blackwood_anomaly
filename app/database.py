@@ -38,7 +38,7 @@ class GameSession(Base):
     created_at       = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
-def run_migrations():
+def run_migrations(db_engine=engine):
     """
     Adds new columns to existing game_sessions tables without dropping data.
     Safe to call on every startup — ignores errors for columns that already exist.
@@ -53,7 +53,7 @@ def run_migrations():
         "ALTER TABLE game_sessions ADD COLUMN player_name TEXT",
         "ALTER TABLE game_sessions ADD COLUMN created_at TEXT",
     ]
-    with engine.connect() as conn:
+    with db_engine.connect() as conn:
         for sql in new_columns:
             try:
                 conn.execute(text(sql))

@@ -10,8 +10,8 @@ import sys
 # Add the parent directory to the path so we can import api and database
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from api import app, get_db, get_llm_provider
-from database import Base, GameSession
+from app.api import app, get_db, get_llm_provider
+from app.database import Base, GameSession, run_migrations
 
 # ==========================================
 # 1. Setup Isolated Test Database
@@ -23,6 +23,7 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 
 # Create the tables in the test database
 Base.metadata.create_all(bind=engine)
+run_migrations(engine)
 
 @pytest.fixture(autouse=True)
 def clear_db():
@@ -76,7 +77,7 @@ def test_create_session():
     assert "freezing dark room" in data["narrative"]
     assert "agent_actions" in data
 
-@patch("api.rag_engine.retrieve")
+@patch("app.api.rag_engine.retrieve")
 def test_submit_action_and_state_update(mock_rag_retrieve):
     """Tests if a player action properly retrieves RAG context, calls AI, and updates DB state."""
     

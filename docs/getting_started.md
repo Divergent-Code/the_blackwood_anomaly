@@ -63,7 +63,7 @@ The Blackwood Anomaly uses SQLAlchemy and defaults to a local SQLite database (`
 Once your dependencies are installed and your database is ready, you can start the FastAPI server.
 
 ```bash
-uvicorn api:app --reload
+uvicorn app.api:app --reload
 ```
 
 The server will boot up and be accessible at `http://127.0.0.1:8000`.

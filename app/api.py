@@ -4,11 +4,11 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from database import get_db, GameSession
+from app.database import get_db, GameSession
 import re
 import random
-from rag import rag_engine
-from llm_provider import LLMProvider, GeminiProvider, OpenAIProvider, OpenRouterProvider
+from app.rag import rag_engine
+from app.llm_provider import LLMProvider, GeminiProvider, OpenAIProvider, OpenRouterProvider
 
 # ---------------------------------------------------------------------------
 # Dependencies

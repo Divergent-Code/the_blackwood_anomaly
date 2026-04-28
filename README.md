@@ -32,7 +32,7 @@ docker-compose up -d
 ### 3. Boot the Server
 
 ```bash
-uvicorn api:app --reload
+uvicorn app.api:app --reload
 ```
 
 ### 4. Play the Game
