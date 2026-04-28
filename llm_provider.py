@@ -140,9 +140,9 @@ class GeminiProvider(LLMProvider):
         return response.embeddings[0].values
 
 class OpenAIProvider(LLMProvider):
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, base_url: Optional[str] = None):
         from openai import AsyncOpenAI
-        self.client = AsyncOpenAI(api_key=api_key)
+        self.client = AsyncOpenAI(api_key=api_key, base_url=base_url)
 
     def _convert_tools(self, tools: Optional[List[Any]]) -> Optional[List[Dict[str, Any]]]:
         if not tools:
@@ -281,3 +281,38 @@ class OpenAIProvider(LLMProvider):
             input=text
         )
         return response.data[0].embedding
+
+class OpenRouterProvider(OpenAIProvider):
+    def __init__(self, api_key: str):
+        super().__init__(api_key=api_key, base_url="https://openrouter.ai/api/v1")
+
+    async def generate_content(
+        self, 
+        model: str, 
+        system_instruction: str,
+        messages: List[Dict[str, str]], 
+        tools: Optional[List[Any]] = None
+    ) -> LLMResponse:
+        # Default fallback for OpenRouter
+        if "gemini" in model:
+            model = "openai/gpt-4o-mini"
+        return await super().generate_content(model, system_instruction, messages, tools)
+
+    async def generate_with_tool_result(
+        self,
+        model: str,
+        system_instruction: str,
+        messages: List[Dict[str, str]],
+        previous_response: LLMResponse,
+        tool_results: List[Dict[str, Any]],
+        tools: Optional[List[Any]] = None
+    ) -> LLMResponse:
+        if "gemini" in model:
+            model = "openai/gpt-4o-mini"
+        return await super().generate_with_tool_result(model, system_instruction, messages, previous_response, tool_results, tools)
+
+    async def embed_content(self, model: str, text: str) -> List[float]:
+        # Map embedding model to OpenRouter syntax
+        if "text-embedding" in model or "gemini" in model:
+            model = "openai/text-embedding-3-small"
+        return await super().embed_content(model, text)

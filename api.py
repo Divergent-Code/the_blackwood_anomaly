@@ -42,9 +42,13 @@ def get_llm_provider(
     
     # Instantiate an isolated provider. No global state!
     try:
-        if x_llm_provider.lower() == "openai":
+        provider_name = x_llm_provider.lower()
+        if provider_name == "openai":
             from llm_provider import OpenAIProvider
             return OpenAIProvider(api_key=user_api_key)
+        elif provider_name == "openrouter":
+            from llm_provider import OpenRouterProvider
+            return OpenRouterProvider(api_key=user_api_key)
         else:
             from llm_provider import GeminiProvider
             return GeminiProvider(api_key=user_api_key)
