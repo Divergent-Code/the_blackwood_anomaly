@@ -286,7 +286,12 @@
         <div class="modal-content">
             <h1>Sanatorium Intake</h1>
             <p style="font-size: 0.85rem; color: #888; line-height: 1.5;">Provide authorized credential (API Key) to initialize patient observation.</p>
-            <input type="text" id="apiKeyInput" placeholder="Enter Gemini API Key..." />
+            <select id="providerSelect" style="width: 100%; background: transparent; border: none; border-bottom: 2px solid #333; color: var(--text-monitor); font-family: var(--font-data); font-size: 1rem; padding: var(--space-sm) 0; margin-bottom: var(--space-sm); outline: none;">
+                <option value="gemini" style="color: black;">Google Gemini</option>
+                <option value="openai" style="color: black;">OpenAI</option>
+                <option value="openrouter" style="color: black;">OpenRouter</option>
+            </select>
+            <input type="text" id="apiKeyInput" placeholder="Enter API Key..." />
             <button id="startBtn">Initialize Observer</button>
         </div>
     </div>
@@ -327,6 +332,7 @@
     <script>
         const DOM = {
             apiModal: document.getElementById('apiModal'),
+            providerSelect: document.getElementById('providerSelect'),
             apiKeyInput: document.getElementById('apiKeyInput'),
             startBtn: document.getElementById('startBtn'),
             healthDisplay: document.getElementById('healthDisplay'),
@@ -340,6 +346,7 @@
         };
 
         let state = {
+            provider: 'gemini',
             apiKey: '',
             sessionId: null,
             health: 100,
@@ -350,6 +357,7 @@
             const key = DOM.apiKeyInput.value.trim();
             if (!key) return;
             state.apiKey = key;
+            state.provider = DOM.providerSelect.value;
             DOM.apiModal.classList.add('hidden');
             await initSession();
         });
@@ -369,7 +377,8 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${state.apiKey}`
+                        'Authorization': `Bearer ${state.apiKey}`,
+                        'X-LLM-Provider': state.provider
                     },
                     body: JSON.stringify({ action: actionText })
                 });
@@ -396,7 +405,8 @@
                 const response = await fetch('/api/v1/sessions', {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${state.apiKey}`
+                        'Authorization': `Bearer ${state.apiKey}`,
+                        'X-LLM-Provider': state.provider
                     }
                 });
                 
