@@ -11,8 +11,15 @@ from rag import rag_engine
 from llm_provider import LLMProvider, GeminiProvider
 
 # --- Constants & Prompts ---
-SYSTEM_PROMPT_START = "You are a horror Game Master. The game has just started..."
-SYSTEM_PROMPT_ACTION = "You are a horror AI Game Master. Strict rule: YOU MUST end your response exactly with [Health: X% | Stress: Y%]."
+def load_storyteller_guide() -> str:
+    """Loads the core narrative constraints and Game Master persona."""
+    try:
+        with open("data/storyteller_guide.md", "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return "You are a horror AI Game Master. Strict rule: YOU MUST end your response exactly with [Health: X% | Stress: Y%]."
+
+STORYTELLER_PROMPT = load_storyteller_guide()
 
 app = FastAPI(title="The Blackwood Anomaly API")
 
@@ -88,7 +95,7 @@ async def create_session(
     try:
         response = await llm.generate_content(
             model='gemini-2.5-flash',
-            system_instruction=SYSTEM_PROMPT_START,
+            system_instruction=STORYTELLER_PROMPT,
             messages=[{"role": "user", "content": "Describe the terrifying room the player wakes up in."}]
         )
         
@@ -151,7 +158,7 @@ Player: {request.action}
         # 4. First LLM Call (Passing the Tool)
         response = await llm.generate_content(
             model='gemini-2.5-flash',
-            system_instruction=SYSTEM_PROMPT_ACTION,
+            system_instruction=STORYTELLER_PROMPT,
             messages=messages,
             tools=[roll_d20]
         )
@@ -172,7 +179,7 @@ Player: {request.action}
             # Second LLM Call: Now that it has the dice roll, generate the final story
             response = await llm.generate_with_tool_result(
                 model='gemini-2.5-flash',
-                system_instruction=SYSTEM_PROMPT_ACTION,
+                system_instruction=STORYTELLER_PROMPT,
                 messages=messages,
                 previous_response=response,
                 tool_results=tool_results,
