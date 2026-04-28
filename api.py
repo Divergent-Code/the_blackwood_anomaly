@@ -8,18 +8,16 @@ from database import get_db, GameSession
 import re
 import random
 from rag import rag_engine
-from llm_provider import LLMProvider, GeminiProvider
+from llm_provider import LLMProvider, GeminiProvider, OpenAIProvider, OpenRouterProvider
 
-# --- Constants & Prompts ---
-def load_storyteller_guide() -> str:
-    """Loads the core narrative constraints and Game Master persona."""
+# --- Dependencies ---
+def get_storyteller_guide() -> str:
+    """Loads the core narrative constraints and Game Master persona dynamically per request."""
     try:
         with open("data/storyteller_guide.md", "r", encoding="utf-8") as f:
             return f.read()
     except FileNotFoundError:
         return "You are a horror AI Game Master. Strict rule: YOU MUST end your response exactly with [Health: X% | Stress: Y%]."
-
-STORYTELLER_PROMPT = load_storyteller_guide()
 
 app = FastAPI(title="The Blackwood Anomaly API")
 
@@ -51,13 +49,10 @@ def get_llm_provider(
     try:
         provider_name = x_llm_provider.lower()
         if provider_name == "openai":
-            from llm_provider import OpenAIProvider
             return OpenAIProvider(api_key=user_api_key)
         elif provider_name == "openrouter":
-            from llm_provider import OpenRouterProvider
             return OpenRouterProvider(api_key=user_api_key)
         else:
-            from llm_provider import GeminiProvider
             return GeminiProvider(api_key=user_api_key)
     except Exception as e:
         raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
@@ -88,14 +83,15 @@ def roll_d20(difficulty_class: int) -> str:
 @app.post("/api/v1/sessions", response_model=GameResponse)
 async def create_session(
     llm: LLMProvider = Depends(get_llm_provider),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    system_instruction: str = Depends(get_storyteller_guide)
 ):
     """Initializes a new game using the player's provided API key."""
     
     try:
         response = await llm.generate_content(
             model='gemini-2.5-flash',
-            system_instruction=STORYTELLER_PROMPT,
+            system_instruction=system_instruction,
             messages=[{"role": "user", "content": "Describe the terrifying room the player wakes up in."}]
         )
         
@@ -124,7 +120,8 @@ async def submit_action(
     session_id: str, 
     request: ActionRequest, 
     llm: LLMProvider = Depends(get_llm_provider),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    system_instruction: str = Depends(get_storyteller_guide)
 ):
     """Processes a player's action, utilizing RAG and saving state to the DB."""
     
@@ -158,7 +155,7 @@ Player: {request.action}
         # 4. First LLM Call (Passing the Tool)
         response = await llm.generate_content(
             model='gemini-2.5-flash',
-            system_instruction=STORYTELLER_PROMPT,
+            system_instruction=system_instruction,
             messages=messages,
             tools=[roll_d20]
         )
@@ -179,7 +176,7 @@ Player: {request.action}
             # Second LLM Call: Now that it has the dice roll, generate the final story
             response = await llm.generate_with_tool_result(
                 model='gemini-2.5-flash',
-                system_instruction=STORYTELLER_PROMPT,
+                system_instruction=system_instruction,
                 messages=messages,
                 previous_response=response,
                 tool_results=tool_results,
