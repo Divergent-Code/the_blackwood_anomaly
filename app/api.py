@@ -368,11 +368,9 @@ async def create_session(
                     "Start the game. Describe the exact moment Subject 814 wakes up "
                     "in the Blackwood Institute. Establish the sensory details of the room, "
                     "the surgical staples on their neck, and give them their first prompt "
-                    "to action. Be brief and punchy. "
-                    "Call apply_vitals(health_delta=0, stress_delta=0) to register starting vitals."
+                    "to action. Be brief and punchy."
                 ),
             }],
-            tools=ALL_TOOLS,
         )
 
         new_session = GameSession(

@@ -358,15 +358,19 @@ class OpenAIProvider(LLMProvider):
         )
 
     async def embed_content(self, model: str, text: str) -> List[float]:
-        # Map generic or google embedding model name to OpenAI
-        if model == "text-embedding-004" or model == "gemini-2.5-flash":
-            model = "text-embedding-3-small"
-            
-        response = await self.client.embeddings.create(
-            model=model,
-            input=text
-        )
-        return response.data[0].embedding
+        try:
+            # Map generic or google embedding model name to OpenAI
+            if model == "text-embedding-004" or model == "gemini-2.5-flash":
+                model = "text-embedding-3-small"
+                
+            response = await self.client.embeddings.create(
+                model=model,
+                input=text
+            )
+            return response.data[0].embedding
+        except Exception as e:
+            print(f"⚠️ Embeddings failed: {e}. Falling back to zero-vector.")
+            return [0.0] * 1536
 
 class OpenRouterProvider(OpenAIProvider):
     def __init__(self, api_key: str):
@@ -398,7 +402,11 @@ class OpenRouterProvider(OpenAIProvider):
         return await super().generate_with_tool_result(model, system_instruction, messages, previous_response, tool_results, tools)
 
     async def embed_content(self, model: str, text: str) -> List[float]:
-        # Map embedding model to OpenRouter syntax
-        if model == "text-embedding-004" or model == "gemini-2.5-flash":
-            model = "openai/text-embedding-3-small"
-        return await super().embed_content(model, text)
+        try:
+            # Map embedding model to OpenRouter syntax
+            if model == "text-embedding-004" or model == "gemini-2.5-flash":
+                model = "openai/text-embedding-3-small"
+            return await super().embed_content(model, text)
+        except Exception as e:
+            print(f"⚠️ OpenRouter embeddings failed (unsupported): {e}. Falling back to zero-vector.")
+            return [0.0] * 1536
