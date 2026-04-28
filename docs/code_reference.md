@@ -61,11 +61,11 @@ A FastAPI dependency generator that creates a localized SQLAlchemy `SessionLocal
 
 ### `get_llm_provider(credentials: HTTPAuthorizationCredentials, x_llm_provider: str)`
 
-A FastAPI security dependency. Extracts the Bearer token from the `Authorization` HTTP header and instantiates an isolated `LLMProvider` (`GeminiProvider` or `OpenAIProvider`) based on the `X-LLM-Provider` header.
+A FastAPI security dependency. Extracts the Bearer token from the `Authorization` HTTP header and instantiates an isolated `LLMProvider` (`GeminiProvider`, `OpenAIProvider`, or `OpenRouterProvider`) based on the `X-LLM-Provider` header.
 
 ## 4. LLM Providers (`llm_provider.py`)
 
-Abstracts the underlying LLM SDKs to provide a unified `generate_content` and `generate_with_tool_result` interface, handling message formatting, tool definitions, and tool result passing across different models.
+Abstracts the underlying LLM SDKs to provide a unified `generate_content` and `generate_with_tool_result` interface, handling message formatting, tool definitions, and tool result passing across different models. Includes `OpenRouterProvider` for automatic endpoint routing and model name translation.
 
 ### `roll_d20(difficulty_class: int) -> str`
 

@@ -34,7 +34,7 @@ flowchart TD
 
 The central orchestrator of the game. It handles routing, dependency injection, and security.
 
-- **Stateless BYOK:** The server extracts the user's API key from the incoming request and instantiates an isolated `LLMProvider`. Supports both Gemini and OpenAI via the `X-LLM-Provider` header.
+- **Stateless BYOK:** The server extracts the user's API key from the incoming request and instantiates an isolated `LLMProvider`. Supports Gemini, OpenAI, and OpenRouter via the `X-LLM-Provider` header.
 - **Agentic Loop:** The API handles `function_calls` from the LLM, executing local Python tools (like `roll_d20`), and feeding the results back for a final generated narrative.
 - **Regex State Extraction:** After the LLM generates a narrative response, the API parses the required `[Health: X% | Stress: Y%]` suffix using Regular Expressions.
 

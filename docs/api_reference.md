@@ -4,7 +4,7 @@ The Blackwood Anomaly provides a RESTful API powered by FastAPI. This document o
 
 ## Authentication
 
-The API uses a **Bring-Your-Own-Key (BYOK)** architecture. All game endpoints require a valid **Gemini or OpenAI API Key** to be passed via the `Authorization` header using the Bearer schema.
+The API uses a **Bring-Your-Own-Key (BYOK)** architecture. All game endpoints require a valid **Gemini, OpenAI, or OpenRouter API Key** to be passed via the `Authorization` header using the Bearer schema.
 
 This ensures that the server remains stateless regarding API billing, and each request utilizes an isolated GenAI client.
 
@@ -15,7 +15,7 @@ Authorization: Bearer <YOUR_API_KEY>
 X-LLM-Provider: gemini
 ```
 
-*Note: `X-LLM-Provider` defaults to `gemini`, but can be set to `openai` if using an OpenAI API Key.*
+*Note: `X-LLM-Provider` defaults to `gemini`, but can be set to `openai` or `openrouter` depending on your preferred API.*
 
 ---
 

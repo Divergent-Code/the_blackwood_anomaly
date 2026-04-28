@@ -1,13 +1,13 @@
 # 🌲 The Blackwood Anomaly
 
-An AI-powered, API-driven survival horror text adventure powered by FastAPI, PostgreSQL, and LLMs (supporting Gemini 2.5 Flash and OpenAI GPT-4o-mini).
+An AI-powered, API-driven survival horror text adventure powered by FastAPI, PostgreSQL, and LLMs (supporting Gemini 2.5 Flash, OpenAI GPT-4o-mini, and OpenRouter).
 
 This project demonstrates how to build a stateful, RAG-augmented game engine where players interact with an AI Game Master that strictly adheres to retrieved game mechanics and lore.
 
 ## 🏛️ Architecture
 
 * **Framework:** FastAPI
-* **AI Integration:** Multi-LLM provider abstraction (BYOK - Bring Your Own Key architecture via Bearer tokens for Gemini or OpenAI). Features Agentic Tool Calling (e.g. `roll_d20`).
+* **AI Integration:** Multi-LLM provider abstraction (BYOK - Bring Your Own Key architecture via Bearer tokens for Gemini, OpenAI, or OpenRouter). Features Agentic Tool Calling (e.g. `roll_d20`).
 * **State Management:** SQLAlchemy + PostgreSQL (via Docker) with a local SQLite fallback for rapid testing.
 * **Retrieval-Augmented Generation (RAG):** A thread-safe, asynchronous lazy-loaded Singleton engine that embeds `world_lore.md` and `combat_mechanics.md` dynamically on the first request, saving massive API overhead while handling concurrent players safely.
 
@@ -39,7 +39,7 @@ uvicorn api:app --reload
 
 Navigate to [http://127.0.0.1:8000/](http://127.0.0.1:8000/) to access the **Medical Brutalism** web interface.
 
-1. Enter your API key (Gemini or OpenAI) into the authorization modal to initialize the session.
+1. Enter your API key (Gemini, OpenAI, or OpenRouter) into the authorization modal to initialize the session.
 2. Observe your vitals and submit your actions to the dossier.
 
 *(Alternatively, navigate to [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) to access the interactive Swagger UI for direct API interaction).*

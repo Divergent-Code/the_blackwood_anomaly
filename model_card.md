@@ -4,7 +4,7 @@
 
 * **Developer:** The Blackwood Anomaly project team.
 * **Model Version:** V1.0
-* **Base Models:** Gemini 2.5 Flash & OpenAI GPT-4o-mini
+* **Base Models:** Gemini 2.5 Flash, OpenAI GPT-4o-mini, & OpenRouter model routing
 * **Task:** Text-based survival horror Game Master orchestration, state extraction, and Agentic Tool Calling.
 * **Architecture:** Large Language Model (LLM) utilizing a stateless Retrieval-Augmented Generation (RAG) pipeline via FastAPI and an abstract `LLMProvider`.
 
