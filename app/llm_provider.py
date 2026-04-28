@@ -76,10 +76,14 @@ class GeminiProvider(LLMProvider):
         
         formatted_history = self._format_messages(messages)
         
+        config_dict = {"system_instruction": system_instruction, "max_output_tokens": 1500}
+        if tools:
+            config_dict["tools"] = tools
+
         response = self.client.models.generate_content(
             model=model,
             contents=formatted_history,
-            config={"system_instruction": system_instruction, "tools": tools} if tools else {"system_instruction": system_instruction}
+            config=config_dict
         )
         
         function_calls = []
@@ -120,10 +124,14 @@ class GeminiProvider(LLMProvider):
         formatted_history.append({"role": "user", "parts": parts})
         
         # Generate final response
+        config_dict = {"system_instruction": system_instruction, "max_output_tokens": 1500}
+        if tools:
+            config_dict["tools"] = tools
+
         response = self.client.models.generate_content(
             model=model,
             contents=formatted_history,
-            config={"system_instruction": system_instruction, "tools": tools} if tools else {"system_instruction": system_instruction}
+            config=config_dict
         )
         
         return LLMResponse(
@@ -277,6 +285,7 @@ class OpenAIProvider(LLMProvider):
         kwargs = {
             "model": model,
             "messages": formatted_messages,
+            "max_tokens": 1500,
         }
         if openai_tools:
             kwargs["tools"] = openai_tools
@@ -345,6 +354,7 @@ class OpenAIProvider(LLMProvider):
         kwargs = {
             "model": model,
             "messages": formatted_messages,
+            "max_tokens": 1500,
         }
         if openai_tools:
             kwargs["tools"] = openai_tools
