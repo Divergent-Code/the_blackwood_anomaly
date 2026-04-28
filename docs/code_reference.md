@@ -65,7 +65,18 @@ A FastAPI security dependency. Extracts the Bearer token from the `Authorization
 
 ### `get_storyteller_guide()`
 
-A FastAPI dependency that dynamically loads `data/storyteller_guide.md` as the foundational system prompt for the LLM. This defines the core Game Master persona, narrative style, and regex state-extraction rules for each session request.
+A FastAPI dependency that dynamically loads `data/storyteller_guide.md` as the foundational system prompt on every LLM call. The guide is structured in four sections:
+
+1. **Persona** — aesthetic and writing voice constraints.
+2. **Core Premise** — the WHO/WHAT/WHERE/WHY lore block grounding all generation in established canon (Subject 814, The Blackwood Institute, The Anomaly).
+3. **Game Loop** — the Resolve → Advance → Prompt narrative structure the LLM must follow on every turn.
+4. **Output Guardrail** — enforces the `[Health: X% | Stress: Y%]` format required for regex state extraction.
+
+Because the file is read per-request (not at boot), narrative tuning changes take effect immediately on the next API call without a server restart.
+
+### `create_session()` — Opening Prompt
+
+The session-initialization LLM call uses a **directive prompt** rather than a vague creative instruction. It explicitly tells the AI which moment to write (Subject 814's wake-up), which physical props to use (surgical staples, hospital gown, concrete room), and mandates ending on a clear player action prompt. This eliminates generic opening outputs.
 
 ## 4. LLM Providers (`llm_provider.py`)
 

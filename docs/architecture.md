@@ -58,7 +58,12 @@ The static, verified truth that anchors the LLM.
 
 - `world_lore.md`: Defines the atmospheric boundaries, aesthetic (Medical Brutalism), and narrative constraints.
 - `combat_mechanics.md`: Hard-coded rules that the LLM must follow to deduct health or apply stress based on player actions.
-- `storyteller_guide.md`: The core Game Master persona and system instructions, enforcing narrative structure (Resolve, Advance, Prompt) and the regex state output format.
+- `storyteller_guide.md`: The core Game Master system prompt, loaded dynamically per request. Contains:
+  - **Persona** — "Medical Brutalism" aesthetic and writing style constraints.
+  - **Core Premise** — Hard-coded WHO/WHAT/WHERE/WHY lore block: *The Blackwood Institute* (location), *Subject 814* (player identity), *The Anomaly* (inciting event), and the escape objective. Grounded context injected on every LLM call.
+  - **Core Directives** — Show-don't-tell, absolute player agency, and brevity rules.
+  - **Game Loop** — Resolve → Advance → Prompt narrative structure.
+  - **Output Guardrail** — Enforces the `[Health: X% | Stress: Y%]` regex target on every response.
 
 ## Security & Privacy
 

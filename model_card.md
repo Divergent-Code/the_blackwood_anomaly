@@ -16,7 +16,11 @@
 
 ## Training Data & Retrieval Context
 
-* **System Instruction:** The baseline persona, aesthetic ("Medical Brutalism"), and formatting constraints (the `[Health: X% | Stress: Y%]` requirement) are loaded dynamically on every request from `data/storyteller_guide.md`.
+* **System Instruction:** Loaded dynamically per request from `data/storyteller_guide.md`. Includes:
+  - Persona and aesthetic constraints ("Medical Brutalism").
+  - **Core Premise block** — hard-coded lore (Subject 814, The Blackwood Institute, The Anomaly, the escape goal) injected on every single LLM call to eliminate context drift and generic outputs.
+  - Narrative loop (Resolve → Advance → Prompt) and the `[Health: X% | Stress: Y%]` output guardrail.
+* **Session Opening:** The `POST /api/v1/sessions` call uses a directive prompt specifying the exact scene (wake-up moment), props (staples, gown, concrete room), and mandatory action-prompt ending to guarantee a consistent, grounded first impression for every player.
 * **Retrieval-Augmented Generation (RAG):** The AI has no inherent persistent memory of the game's mechanics. Instead, it relies on strict context injected at runtime from two verified sources:
     1. `world_lore.md`: The atmospheric constraints, setting details, and narrative boundaries.
     2. `combat_mechanics.md`: Hard-coded rules dictating when the player should take damage or accrue stress based on their actions.

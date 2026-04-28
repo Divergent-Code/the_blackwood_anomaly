@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - **FastAPI REST API (`api.py`)**: Migrated the core game loop from a local terminal script to a fully functional, stateless REST API.
 - **System Prompt Decoupling**: Abstracted the AI Game Master persona into `data/storyteller_guide.md`, loaded dynamically via `api.py` dependency injection to easily tune the narrative style and formatting constraints.
+- **Core Premise Context (`data/storyteller_guide.md`)**: Added a `## THE CORE PREMISE` section anchoring every generation to named lore: The Blackwood Institute (WHERE), Subject 814 (WHO), The Anomaly (WHY), and the escape goal (WHAT). Eliminates generic "dark room" outputs entirely.
+- **Directive Session Opening (`api.py`)**: Replaced the vague session-start prompt with a specific directive instructing the LLM to write the exact wake-up moment—surgical staples, hospital gown, concrete room—ending on a clear action prompt.
 - **Multi-LLM Abstraction (`llm_provider.py`)**: Abstracted the AI engine to support Gemini, OpenAI, and OpenRouter models via the `X-LLM-Provider` header (including automatic model mapping for OpenRouter endpoints).
 - **Agentic Tool Calling**: The Game Master can now autonomously decide to invoke the `roll_d20` Python function for dice rolls.
 - **Agent Action Tracing**: Added the `agent_actions` array to `GameResponse` to log intermediate agent planning steps to the client.
