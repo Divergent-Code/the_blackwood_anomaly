@@ -3,6 +3,14 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+import json
+
+def _parse_json_list(val):
+    if isinstance(val, list): return val
+    if isinstance(val, str):
+        try: return json.loads(val)
+        except: return []
+    return []
 from sqlalchemy.orm import Session
 from app.database import get_db, GameSession
 import re
@@ -301,10 +309,10 @@ async def get_session(session_id: str, db: Session = Depends(get_db)):
         session_id=session.id,
         health=session.health,
         stress=session.stress,
-        history=session.history or [],
-        inventory=session.inventory or [],
+        history=_parse_json_list(session.history),
+        inventory=_parse_json_list(session.inventory),
         current_location=session.current_location or "Intake Bay 4",
-        discovered_lore=session.discovered_lore or [],
+        discovered_lore=_parse_json_list(session.discovered_lore),
         escape_stage=session.escape_stage or 0,
         turn_count=session.turn_count or 0,
     )
@@ -395,9 +403,9 @@ async def create_session(
             health=new_session.health,
             stress=new_session.stress,
             narrative=response.text,
-            inventory=[],
+            inventory=_parse_json_list(new_session.inventory),
             current_location="Intake Bay 4",
-            discovered_lore=[],
+            discovered_lore=_parse_json_list(new_session.discovered_lore),
             escape_stage=0,
             turn_count=0,
         )
@@ -517,9 +525,9 @@ async def submit_action(
             stress=session.stress,
             narrative=ai_text,
             agent_actions=agent_actions,
-            inventory=session.inventory or [],
+            inventory=_parse_json_list(session.inventory),
             current_location=session.current_location or "Intake Bay 4",
-            discovered_lore=session.discovered_lore or [],
+            discovered_lore=_parse_json_list(session.discovered_lore),
             escape_stage=session.escape_stage or 0,
             turn_count=session.turn_count,
             game_over=game_over,
