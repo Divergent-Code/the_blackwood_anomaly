@@ -7,6 +7,9 @@ from unittest.mock import patch, MagicMock, AsyncMock
 import os
 import sys
 
+# Setup test DB environment variable before any imports
+os.environ["DATABASE_URL"] = "sqlite:///./test_blackwood.db"
+
 # Add the parent directory to the path so we can import api and database
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 

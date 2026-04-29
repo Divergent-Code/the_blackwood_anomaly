@@ -34,7 +34,7 @@ flowchart TD
 
 The central orchestrator of the game. It handles routing, dependency injection, and security.
 
-- **Stateless BYOK:** The server extracts the user's API key from the incoming request and instantiates an isolated `LLMProvider`. Supports Gemini, OpenAI, and OpenRouter via the `X-LLM-Provider` header.
+- **Stateless BYOK:** The server extracts the user's API key from the incoming request and instantiates an isolated `LLMProvider`. Supports Gemini, OpenAI, and OpenRouter via the `X-LLM-Provider` header. Players can also specify the `X-GM-Model` for the storytelling narrative and the `X-Mechanics-Model` specifically for running the agentic tool-calling loop.
 - **Agentic Loop:** The API handles `function_calls` from the LLM, executing local Python tools (like `roll_d20`, `apply_vitals`, `add_item`, `move_to_location`), and feeding the results back for a final generated narrative. These tools allow the LLM to directly mutate the persistent game state.
 - **Regex State Fallback:** If the LLM does not call `apply_vitals`, the API falls back to parsing a `[Health: X% | Stress: Y%]` suffix using Regular Expressions.
 - **Derived Game State:** The API computes status flags (`game_over`, `game_won`, `panic_cascade`) automatically based on the updated numerical state.
