@@ -368,10 +368,12 @@ async def create_session(
                     "Start the game. Describe the exact moment Subject 814 wakes up "
                     "in the Blackwood Institute. Establish the sensory details of the room, "
                     "the surgical staples on their neck, and give them their first prompt "
-                    "to action. Be brief and punchy."
+                    "to action. You MUST explicitly end your narrative with the question: 'What do you do?'"
                 ),
             }],
         )
+
+        print("RAW AI TEXT:", repr(response.text))
 
         new_session = GameSession(
             health=100,
