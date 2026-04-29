@@ -60,6 +60,7 @@ is visible and wrong — the AI should describe spatial impossibilities at their
 most intense. The player's implant (from the surgical log) resonates painfully
 as they pass through.
 **Mechanical notes:**
+
 - Apply +20% stress automatically upon entering The Breach Point
 - At least one DC 15+ check is required to cross — the method is the player's choice
 - Natural 20 here: the aperture briefly contracts as the player passes — a sign

@@ -8,7 +8,7 @@ Do NOT invent new rooms outside this structure without anchoring them to a zone.
 
 ## Zone Layout (Top to Bottom)
 
-```
+```text
 [SURFACE — RESTRICTED ACCESS]
         |
   Surface Elevator Shaft  ← Escape Route Stage 2
@@ -31,6 +31,7 @@ Do NOT invent new rooms outside this structure without anchoring them to a zone.
 ## Zone Descriptions
 
 ### Intake Bay 4 *(Starting Location)*
+
 A recovery room. Eight gurneys bolted to the floor, four overturned. Clinical
 white tile, now grey with grime and something darker. Fluorescent tubes flicker
 at irregular intervals. The smell is isopropyl alcohol and something organic
@@ -45,6 +46,7 @@ effects.
 ---
 
 ### Surgery Wing
+
 A long corridor of operating theatres. Heavy steel doors, most sealed. Through
 small reinforced windows, the theatres are dark. Equipment has been rearranged —
 tables pushed against walls, instruments scattered. The Surgical Automatons
@@ -59,6 +61,7 @@ The Warden control panel for this wing is in the scrub room.
 ---
 
 ### Morgue Corridor
+
 A long, low-ceilinged passage. Body storage drawers line both walls — most closed,
 several open and empty. The floor is slightly sloped toward a central drain.
 The drain is blocked. The Crawl was first observed here.
@@ -71,6 +74,7 @@ DC 12 to open). The badge is required to access the Research Archive elevator.
 ---
 
 ### Research Archive
+
 A climate-controlled library of servers, filing cabinets, and terminal stations.
 Dim emergency lighting only. This is where the Institute stored its research
 data — and where it hid what it could not publish. Most terminals are locked.
@@ -85,6 +89,7 @@ to activity here. Station 7 contains Subject 814's full intake file.
 ---
 
 ### Containment Sector
+
 The lowest accessible area of the Institute before The Breach. Reinforced concrete
 everywhere. The architecture becomes irregular here — angles that don't add up,
 rooms that are larger inside than their external dimensions suggest. The Anomaly's
@@ -99,6 +104,7 @@ access code is etched into the underside of a workstation desk.
 ---
 
 ### The Breach Point
+
 The origin of The Anomaly. A research laboratory whose walls, floor, and ceiling
 have been partially replaced by something that is not concrete and not air. The
 dimensional breach is visible — a 3-metre irregular aperture that emits no light
@@ -113,6 +119,7 @@ what the Institute was actually researching and what Subject 814 was.
 ---
 
 ### Surface Elevator Shaft
+
 An industrial elevator, surprisingly intact. The mechanism requires power, which
 must be rerouted from a junction box (DC 14). Once powered, the elevator ascends
 to a locked surface hatch (DC 16 to force, or use Director code).
@@ -123,6 +130,7 @@ to a locked surface hatch (DC 16 to force, or use Director code).
 ---
 
 ### Service Tunnels
+
 A network of maintenance crawlways connecting all zones. Low, dark, and narrow.
 Used by utility drones pre-Anomaly. Now used by The Crawl as a transit network.
 Moving through tunnels is faster but riskier.
