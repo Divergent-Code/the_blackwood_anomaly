@@ -322,6 +322,7 @@ async def get_session(session_id: str, db: Session = Depends(get_db)):
 async def get_session_recap(
     session_id: str,
     llm: LLMProvider = Depends(get_llm_provider),
+    gm_model: str = Header("gemini-2.5-flash", alias="X-GM-Model"),
     db: Session = Depends(get_db),
     system_instruction: str = Depends(get_storyteller_guide),
 ):
@@ -346,7 +347,7 @@ async def get_session_recap(
     )
     try:
         response = await llm.generate_content(
-            model="gemini-2.5-flash",
+            model=gm_model,
             system_instruction=system_instruction,
             messages=[{"role": "user", "content": recap_prompt}],
         )
@@ -362,13 +363,14 @@ async def get_session_recap(
 @app.post("/api/v1/sessions", response_model=GameResponse)
 async def create_session(
     llm: LLMProvider = Depends(get_llm_provider),
+    gm_model: str = Header("gemini-2.5-flash", alias="X-GM-Model"),
     db: Session = Depends(get_db),
     system_instruction: str = Depends(get_storyteller_guide),
 ):
     """Initializes a new game session."""
     try:
         response = await llm.generate_content(
-            model="gemini-2.5-flash",
+            model=gm_model,
             system_instruction=system_instruction,
             messages=[{
                 "role": "user",
@@ -418,6 +420,8 @@ async def submit_action(
     session_id: str,
     request: ActionRequest,
     llm: LLMProvider = Depends(get_llm_provider),
+    gm_model: str = Header("gemini-2.5-flash", alias="X-GM-Model"),
+    mechanics_model: str = Header("gemini-2.5-flash", alias="X-Mechanics-Model"),
     db: Session = Depends(get_db),
     system_instruction: str = Depends(get_storyteller_guide),
 ):
@@ -466,7 +470,7 @@ async def submit_action(
 
         # 5. First LLM call
         response = await llm.generate_content(
-            model="gemini-2.5-flash",
+            model=mechanics_model,
             system_instruction=system_instruction,
             messages=messages,
             tools=ALL_TOOLS,
@@ -484,7 +488,7 @@ async def submit_action(
 
             # Second LLM call with tool results
             response = await llm.generate_with_tool_result(
-                model="gemini-2.5-flash",
+                model=gm_model,
                 system_instruction=system_instruction,
                 messages=messages,
                 previous_response=response,

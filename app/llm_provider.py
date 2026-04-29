@@ -313,9 +313,6 @@ class OpenAIProvider(LLMProvider):
         tools: Optional[List[Any]] = None
     ) -> LLMResponse:
         
-        if model == "gemini-2.5-flash":
-            model = "gpt-4o-mini"
-            
         formatted_messages = [{"role": "system", "content": system_instruction}]
         for msg in messages:
             role = "user" if msg["role"] == "user" else "assistant"
@@ -362,10 +359,6 @@ class OpenAIProvider(LLMProvider):
         tool_results: List[Dict[str, Any]],
         tools: Optional[List[Any]] = None
     ) -> LLMResponse:
-        
-        if model == "gemini-2.5-flash":
-            model = "gpt-4o-mini"
-            
         formatted_messages = [{"role": "system", "content": system_instruction}]
         for msg in messages:
             role = "user" if msg["role"] == "user" else "assistant"
@@ -437,9 +430,6 @@ class OpenRouterProvider(OpenAIProvider):
         messages: List[Dict[str, str]], 
         tools: Optional[List[Any]] = None
     ) -> LLMResponse:
-        # Default fallback for OpenRouter
-        if model == "gemini-2.5-flash":
-            model = "openai/gpt-4o-mini"
         return await super().generate_content(model, system_instruction, messages, tools)
 
     async def generate_with_tool_result(
@@ -451,8 +441,6 @@ class OpenRouterProvider(OpenAIProvider):
         tool_results: List[Dict[str, Any]],
         tools: Optional[List[Any]] = None
     ) -> LLMResponse:
-        if model == "gemini-2.5-flash":
-            model = "openai/gpt-4o-mini"
         return await super().generate_with_tool_result(model, system_instruction, messages, previous_response, tool_results, tools)
 
     async def embed_content(self, model: str, text: str) -> List[float]:

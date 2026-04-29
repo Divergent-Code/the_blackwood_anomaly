@@ -520,7 +520,11 @@
                 <option value="openai" style="color: black;">OpenAI</option>
                 <option value="openrouter" style="color: black;">OpenRouter</option>
             </select>
-            <input type="text" id="apiKeyInput" placeholder="Enter API Key..." />
+            <input type="text" id="apiKeyInput" placeholder="Enter API Key..." style="width: 100%; background: transparent; border: none; border-bottom: 2px solid #333; color: var(--text-monitor); font-family: var(--font-data); font-size: 1rem; padding: var(--space-sm) 0; outline: none; margin-bottom: var(--space-sm);" />
+            <div style="display: flex; gap: var(--space-sm); margin-bottom: var(--space-sm);">
+                <input type="text" id="gmModelInput" placeholder="GM Model (e.g. gemini-2.5-flash)" value="gemini-2.5-flash" style="flex: 1; background: transparent; border: none; border-bottom: 2px solid #333; color: var(--text-monitor); font-family: var(--font-data); font-size: 0.85rem; padding: var(--space-sm) 0; outline: none;" />
+                <input type="text" id="mechanicsModelInput" placeholder="Mechanics Model (e.g. gemini-2.5-flash)" value="gemini-2.5-flash" style="flex: 1; background: transparent; border: none; border-bottom: 2px solid #333; color: var(--text-monitor); font-family: var(--font-data); font-size: 0.85rem; padding: var(--space-sm) 0; outline: none;" />
+            </div>
             <button id="startBtn">Initialize New Session</button>
             <div id="resumeSection" style="display: none; margin-top: var(--space-sm); border-top: 1px solid #333; padding-top: var(--space-md);">
                 <p style="font-size: 0.75rem; color: #666; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: var(--space-sm);">Previous session detected</p>
@@ -634,6 +638,8 @@
             apiModal: document.getElementById('apiModal'),
             providerSelect: document.getElementById('providerSelect'),
             apiKeyInput: document.getElementById('apiKeyInput'),
+            gmModelInput: document.getElementById('gmModelInput'),
+            mechanicsModelInput: document.getElementById('mechanicsModelInput'),
             startBtn: document.getElementById('startBtn'),
             resumeSection: document.getElementById('resumeSection'),
             resumeBtn: document.getElementById('resumeBtn'),
@@ -656,6 +662,8 @@
         let state = {
             provider: 'gemini',
             apiKey: '',
+            gmModel: 'gemini-2.5-flash',
+            mechanicsModel: 'gemini-2.5-flash',
             sessionId: null,
             health: 100,
             stress: 0,
@@ -677,6 +685,10 @@
                 DOM.resumeSection.style.display = 'block';
                 if (savedProvider) DOM.providerSelect.value = savedProvider;
             }
+            const savedGmModel = localStorage.getItem('blackwood_gm_model');
+            const savedMechanicsModel = localStorage.getItem('blackwood_mechanics_model');
+            if (savedGmModel) DOM.gmModelInput.value = savedGmModel;
+            if (savedMechanicsModel) DOM.mechanicsModelInput.value = savedMechanicsModel;
         })();
 
         DOM.startBtn.addEventListener('click', async () => {
@@ -684,9 +696,13 @@
             if (!key) return;
             state.apiKey = key;
             state.provider = DOM.providerSelect.value;
+            state.gmModel = DOM.gmModelInput.value.trim() || 'gemini-2.5-flash';
+            state.mechanicsModel = DOM.mechanicsModelInput.value.trim() || 'gemini-2.5-flash';
             // Clear any old saved session when starting fresh
             localStorage.removeItem('blackwood_session_id');
             localStorage.removeItem('blackwood_provider');
+            localStorage.setItem('blackwood_gm_model', state.gmModel);
+            localStorage.setItem('blackwood_mechanics_model', state.mechanicsModel);
             DOM.apiModal.classList.add('hidden');
             await initSession();
         });
@@ -696,6 +712,8 @@
             if (!key) { alert('Enter your API key to resume.'); return; }
             state.apiKey = key;
             state.provider = DOM.providerSelect.value;
+            state.gmModel = DOM.gmModelInput.value.trim() || 'gemini-2.5-flash';
+            state.mechanicsModel = DOM.mechanicsModelInput.value.trim() || 'gemini-2.5-flash';
             DOM.apiModal.classList.add('hidden');
             await resumeSession();
         });
@@ -716,7 +734,9 @@
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${state.apiKey}`,
-                        'X-LLM-Provider': state.provider
+                        'X-LLM-Provider': state.provider,
+                        'X-GM-Model': state.gmModel,
+                        'X-Mechanics-Model': state.mechanicsModel
                     },
                     body: JSON.stringify({ action: actionText })
                 });
@@ -749,7 +769,9 @@
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${state.apiKey}`,
-                        'X-LLM-Provider': state.provider
+                        'X-LLM-Provider': state.provider,
+                        'X-GM-Model': state.gmModel,
+                        'X-Mechanics-Model': state.mechanicsModel
                     }
                 });
                 
@@ -796,7 +818,9 @@
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${state.apiKey}`,
-                        'X-LLM-Provider': state.provider
+                        'X-LLM-Provider': state.provider,
+                        'X-GM-Model': state.gmModel,
+                        'X-Mechanics-Model': state.mechanicsModel
                     }
                 });
 
