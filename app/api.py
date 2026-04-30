@@ -465,7 +465,7 @@ async def submit_action(
     )
 
     try:
-        messages = _parse_json_list(session.history)
+        messages = list(_parse_json_list(session.history))
         messages.append({"role": "user", "content": augmented_prompt})
         agent_actions: list[str] = []
         vitals_updated_by_tool = False
@@ -517,7 +517,7 @@ async def submit_action(
 
         # 9. Increment turn and persist history
         session.turn_count = (session.turn_count or 0) + 1
-        new_history = _parse_json_list(session.history)
+        new_history = list(_parse_json_list(session.history))
         new_history.append({"role": "user", "content": request.action})
         new_history.append({"role": "model", "content": ai_text})
         session.history = new_history
