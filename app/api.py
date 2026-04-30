@@ -216,7 +216,7 @@ def _execute_tool_call(tool_call, session: GameSession) -> tuple[str, str]:
 
     elif name == "add_item":
         item = args.get("item_name", "").strip()
-        inventory = list(session.inventory or [])
+        inventory = _parse_json_list(session.inventory)
         if len(inventory) >= 4:
             result = f"INVENTORY FULL (4/4). Cannot add '{item}' — player must drop an item first."
         elif item in inventory:
@@ -229,7 +229,7 @@ def _execute_tool_call(tool_call, session: GameSession) -> tuple[str, str]:
 
     elif name == "remove_item":
         item = args.get("item_name", "").strip()
-        inventory = list(session.inventory or [])
+        inventory = _parse_json_list(session.inventory)
         if item in inventory:
             inventory.remove(item)
             session.inventory = inventory
@@ -241,7 +241,7 @@ def _execute_tool_call(tool_call, session: GameSession) -> tuple[str, str]:
     elif name == "move_to_location":
         location = args.get("location_name", "").strip()
         session.current_location = location
-        visited = list(session.visited_locations or [])
+        visited = _parse_json_list(session.visited_locations)
         if location not in visited:
             visited.append(location)
             session.visited_locations = visited
@@ -250,10 +250,10 @@ def _execute_tool_call(tool_call, session: GameSession) -> tuple[str, str]:
 
     elif name == "discover_lore":
         fid = args.get("fragment_id", "").strip()
-        discovered = list(session.discovered_lore or [])
-        if fid not in discovered:
-            discovered.append(fid)
-            session.discovered_lore = discovered
+        lore = _parse_json_list(session.discovered_lore)
+        if fid not in lore:
+            lore.append(fid)
+            session.discovered_lore = lore
             result = f"Lore fragment '{fid}' added to dossier."
         else:
             result = f"Fragment '{fid}' already discovered."
@@ -449,21 +449,23 @@ async def submit_action(
     rag_context_str = "\n\n".join(c["content"] for c in retrieved_chunks)
 
     # 4. Build augmented prompt
-    inventory_str = ", ".join(session.inventory or []) or "empty"
-    lore_str = ", ".join(session.discovered_lore or []) or "none"
+    inventory_list = _parse_json_list(session.inventory)
+    lore_list = _parse_json_list(session.discovered_lore)
+    inventory_str = ", ".join(inventory_list) or "empty"
+    lore_str = ", ".join(lore_list) or "none"
     augmented_prompt = (
         f"=== RETRIEVED GAME MECHANICS ===\n{rag_context_str}\n\n"
         f"=== CURRENT GAME STATE ===\n"
         f"Location: {session.current_location or 'Intake Bay 4'}\n"
         f"Health: {session.health}% | Stress: {session.stress}%\n"
-        f"Inventory ({len(session.inventory or [])}/4): {inventory_str}\n"
+        f"Inventory ({len(inventory_list)}/4): {inventory_str}\n"
         f"Escape stage: {session.escape_stage or 0}/4\n"
         f"Lore discovered: {lore_str}\n\n"
         f"=== PLAYER ACTION ===\n{request.action}"
     )
 
     try:
-        messages = list(session.history or [])
+        messages = _parse_json_list(session.history)
         messages.append({"role": "user", "content": augmented_prompt})
         agent_actions: list[str] = []
         vitals_updated_by_tool = False
@@ -515,7 +517,7 @@ async def submit_action(
 
         # 9. Increment turn and persist history
         session.turn_count = (session.turn_count or 0) + 1
-        new_history = list(session.history or [])
+        new_history = _parse_json_list(session.history)
         new_history.append({"role": "user", "content": request.action})
         new_history.append({"role": "model", "content": ai_text})
         session.history = new_history
