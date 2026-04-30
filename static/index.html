@@ -48,11 +48,14 @@
             padding: var(--space-xl) var(--space-md) var(--space-md) var(--space-md);
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            justify-content: flex-start;
+            gap: var(--space-lg);
             font-family: var(--font-data);
             border-right: 6px solid var(--accent-blood);
             box-shadow: 10px 0 30px rgba(0,0,0,0.1);
             z-index: 10;
+            overflow-y: auto;
+            overflow-x: hidden;
         }
 
         .vitals {
@@ -453,8 +456,6 @@
             align-items: center;
             justify-content: center;
             position: relative;
-            outline: 3px solid transparent;
-            transition: outline-color 0.3s;
         }
 
         /* Glow ring — separate element so clip-path doesn't eat it */
@@ -505,7 +506,10 @@
             60%      { transform: translate(-2px, 3px) rotate(-1deg); }
             80%      { transform: translate(3px,-1px) rotate(2deg); }
         }
-        .dice-face-wrap.rolling { animation: diceShake 0.09s linear infinite; }
+        .dice-face-wrap.rolling { 
+            animation: diceShake 0.09s linear infinite; 
+            filter: drop-shadow(0 0 15px var(--accent-blood));
+        }
 
     </style>
 </head>
